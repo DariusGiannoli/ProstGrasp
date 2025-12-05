@@ -1,0 +1,1104 @@
+name: "Publish phosphobot server"
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform to build for"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - macos
+          - linux
+          - windows
+          - pypi
+      publish:
+        description: "Whether to publish the release when using workflow_dispatch"
+        required: false
+        default: false
+        type: boolean
+  release:
+    types: [published]
+
+# To configure your package manager with this repository:
+# Configure your VM to access Artifact Registry packages using the following
+
+#  curl https://europe-west1-apt.pkg.dev/doc/repo-signing-key.gpg | sudo apt-key add -
+#  echo "deb https://europe-west1-apt.pkg.dev/projects/portal-385519 phospho-apt main" | sudo tee -a /etc/apt/sources.list.d/artifact-registry.list
+#  sudo apt update
+#  sudo apt install phosphobot
+
+permissions:
+  pull-requests: write
+  contents: write
+  # IMPORTANT: this permission is mandatory for Trusted Publishing
+  id-token: write
+
+env:
+  # Used for the Debian package
+  PACKAGE_NAME: phosphobot
+  MAINTAINER: Phospho <contact@phospho.ai>
+  REPO_NAME_APT: phospho-apt
+  PROJECT_ID: portal-385519
+  REGION: europe-west1
+  FORMULA_NAME: phosphobot
+  HOMEBREW_TAP: phospho-app/homebrew-phosphobot
+  BRANCH_NAME: ${{ github.ref_name}}
+  COMMIT_ID: ${{ github.sha }}
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+jobs:
+  build_macos:
+    if: ${{ github.event_name == 'release' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            create_deb: false
+            architecture: arm64
+          - os: macos-13
+            create_deb: false
+            architecture: x86_64
+
+    runs-on: ${{ matrix.os }}
+    outputs:
+      version: ${{ env.VERSION }}
+    steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
+
+      # Log the current date and time
+      - name: Log current date and time
+        run: date
+
+      - name: Extract project version
+        id: version
+        run: |
+          VERSION=$(grep '^version =' phosphobot/pyproject.toml | cut -d '"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get release tag
+        id: tag
+        run: |
+          TAG_NAME=$(echo ${{ github.ref }} | sed 's/^refs\/tags\///; s/^v//')
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        if: github.event_name == 'release'
+        run: |
+          if [ "${{ steps.version.outputs.version }}" != "${{ steps.tag.outputs.tag }}" ]; then
+            echo "::error::Version mismatch! pyproject.toml version (${{ steps.version.outputs.version }}) ≠ release tag (${{ steps.tag.outputs.tag }})"
+            exit 1
+          else
+            echo "Version matches (${{ steps.version.outputs.version}})"
+          fi
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.5"
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+        with:
+          working-directory: dashboard
+
+      - name: Build dashboard frontend
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: make build_frontend
+
+      - name: Check that the frontend build was successful (dist folder not empty)
+        run: |
+          if [ ! -d "phosphobot/resources/dist" ]; then
+            echo "Dashboard frontend build failed: dist folder not found"
+            exit 1
+          fi
+          if [ ! "$(ls -A phosphobot/resources/dist)" ]; then
+            echo "Dashboard frontend build failed: dist folder is empty"
+            exit 1
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "phosphobot/pyproject.toml"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v2"
+        env:
+          GCP_JSON_CREDENTIALS: ${{ secrets.GCP_JSON_CREDENTIALS }}
+        with:
+          credentials_json: ${{ secrets.GCP_JSON_CREDENTIALS }}
+
+      - name: Set up GCP Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Initialize and build bullet3 submodule
+        run: |
+          git submodule update --init bullet3
+          cd phosphobot
+          uv venv --python 3.10
+          source .venv/bin/activate
+          uv pip install setuptools wheel numpy
+          cd ../bullet3
+          python setup.py build
+          python setup.py install
+
+      - name: Replace pybullet path in pyproject.toml
+        run: |
+          cd phosphobot
+          ls -la
+          sed -i '' 's/# pybullet = { path = "..\/bullet3", editable = true }/pybullet = { path = "..\/bullet3", editable = true }/' pyproject.toml
+          uv python pin 3.10
+          CXX=g++ uv sync --dev
+
+      - name: Print version
+        run: |
+          cd phosphobot
+          uv run phosphobot --version
+
+      - name: Check release tag version
+        if: github.event_name == 'release'
+        run: |
+          cd phosphobot
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+          VERSION=${RELEASE_TAG#v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Create tokens.toml
+        run: |
+          mkdir -p phosphobot/resources
+          cat > phosphobot/resources/tokens.toml << EOF
+          ENV = "prod"
+          SENTRY_DSN = "${{ secrets.SENTRY_DSN }}"
+          POSTHOG_API_KEY = "${{ secrets.POSTHOG_API_KEY }}"
+          POSTHOG_HOST = "${{ vars.POSTHOG_HOST }}"
+          SUPABASE_URL = "${{ vars.SUPABASE_URL }}"
+          SUPABASE_KEY = "${{ secrets.SUPABASE_KEY }}"
+          MODAL_API_URL = "${{ vars.MODAL_API_URL }}"
+          EOF
+
+      - name: Build artifact with PyInstaller
+        run: |
+          make clean_build
+          OUTPUT_FILENAME="phosphobot-${{ env.VERSION }}-${{ matrix.architecture }}.bin"
+          make build_pyinstaller OUTPUT_FILENAME="$OUTPUT_FILENAME"
+          cp "phosphobot/dist/$OUTPUT_FILENAME" "phosphobot/$OUTPUT_FILENAME"
+          echo "OUTPUT_FILENAME=$OUTPUT_FILENAME" >> $GITHUB_ENV
+
+      - name: Show full directory structure inside /phosphobot/dist
+        run: tree -L 3 phosphobot/dist || find phosphobot/dist -type f
+
+      - name: Check artifact
+        run: |
+          file phosphobot/${{ env.OUTPUT_FILENAME }}
+
+      # BEGIN NOTARIZATION STEPS FOR macOS
+      # - name: Import Code-Signing Certificate
+      #   if: runner.os == 'macOS'
+      #   env:
+      #     CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+      #     CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+      #   run: |
+      #     echo $CERTIFICATE_P12_BASE64 | base64 --decode > certificate.p12
+      #     security create-keychain -p "${{ github.run_id }}" build.keychain
+      #     security default-keychain -s build.keychain
+      #     security unlock-keychain -p "${{ github.run_id }}" build.keychain
+      #     security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ github.run_id }}" build.keychain
+      # - name: Sign the Application
+      #   if: runner.os == 'macOS'
+      #   env:
+      #     TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      #   run: |
+      #     codesign --force --options runtime --sign "Developer ID Application: phospho (VX45VP8953)" phosphobot/${{ env.OUTPUT_FILENAME }}
+      #     codesign --verify --verbose phosphobot/${{ env.OUTPUT_FILENAME }}
+      # # We need to zip the file to be able to submit it to Apple
+      # - name: Create Zip for Notarization
+      #   if: runner.os == 'macOS'
+      #   run: |
+      #     zip -r phosphobot/${{ env.OUTPUT_FILENAME }}.zip phosphobot/${{ env.OUTPUT_FILENAME }}
+      # - name: Notarize App
+      #   if: runner.os == 'macOS'
+      #   env:
+      #     APPLE_ID: ${{ secrets.APPLE_ID }}
+      #     APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      #     APPLE_APP_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+      #   run: |
+      #     xcrun notarytool submit phosphobot/${{ env.OUTPUT_FILENAME }}.zip \
+      #       --apple-id "$APPLE_ID" \
+      #       --team-id "$APPLE_TEAM_ID" \
+      #       --password "$APPLE_APP_PASSWORD" \
+      #       --wait --verbose
+      # # END NOTARIZATION STEPS.
+      - name: Run the built application
+        run: |
+          ./phosphobot/${{ env.OUTPUT_FILENAME }} run \
+            --simulation=headless --simulate-cameras --port=8080 --host=127.0.0.1 \
+            --only-simulation --no-telemetry > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..45}; do
+            if curl -s http://localhost:8080/status; then
+              echo "Server ready! in $i seconds" >> server.log
+              echo "Server ready! in $i seconds"
+              break
+            else
+              echo "Waiting for server..." >> server.log
+              echo "Waiting for server..."
+              sleep 1
+            fi
+          done
+
+      - name: Create phosphobot directory for macOS
+        run: |
+          sudo mkdir -p ~/phosphobot
+          sudo chmod 777 ~/phosphobot
+
+      - name: Write HF_TOKEN to /home/runner/phosphobot/huggingface.token
+        run: |
+          echo $HF_TOKEN > ~/phosphobot/huggingface.token
+
+      - name: Run integration tests
+        run: cd phosphobot && uv run pytest tests/api/
+        continue-on-error: false
+
+      - name: Print server.log (always run) and upload as artifact
+        if: ${{ always() }}
+        run: |
+          echo "=== BEGIN server.log ==="
+          if [ -f server.log ]; then
+            # Print the whole file (or tail if very large)
+            # tail -n 2000 server.log || true     # alternative: only last 2000 lines
+            cat server.log || true
+          else
+            echo "No server.log file found at $(pwd)/server.log"
+            echo "Listing files for debugging:"
+            ls -la
+          fi
+          echo "=== END server.log ==="
+        # don't fail this step even if printing had errors
+        continue-on-error: true
+
+      - name: Upload server.log artifact (always)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log-${{ matrix.os }}-${{ matrix.architecture }}
+          path: server.log
+          retention-days: 7
+
+      # Calculate SHA256 for all files
+      - name: Calculate SHA256
+        run: |
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            SHA=$(shasum -a 256 "phosphobot/${{ env.OUTPUT_FILENAME }}" | awk '{print $1}')
+          else
+            SHA=$(sha256sum "phosphobot/${{ env.OUTPUT_FILENAME }}" | awk '{print $1}')
+          fi
+          echo "${SHA}" > "sha256-${OUTPUT_FILENAME}.txt"
+          echo "OUTPUT_FILENAME_SHA=${SHA}" >> $GITHUB_ENV
+
+      - name: Upload SHA256 info
+        uses: actions/upload-artifact@v4
+        with:
+          name: sha256-${{ env.OUTPUT_FILENAME }}.txt
+          path: sha256-${{ env.OUTPUT_FILENAME }}.txt
+          retention-days: 1
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.PACKAGE_NAME }}-${{ env.VERSION }}-${{ matrix.architecture }}.bin"
+          path: "phosphobot/${{ env.OUTPUT_FILENAME }}"
+          retention-days: 1
+
+  build_linux:
+    if: ${{ github.event_name == 'release' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            create_deb: true
+            architecture: amd64
+          - os: linux-arm64
+            create_deb: true
+            architecture: arm64
+
+    runs-on: ${{ matrix.os }}
+    outputs:
+      version: ${{ env.VERSION }}
+    steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
+
+      # Log the current date and time
+      - name: Log current date and time
+        run: date
+
+      - name: Extract project version
+        id: version
+        run: |
+          VERSION=$(grep '^version =' phosphobot/pyproject.toml | cut -d '"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get release tag
+        id: tag
+        run: |
+          TAG_NAME=$(echo ${{ github.ref }} | sed 's/^refs\/tags\///; s/^v//')
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          if [ "${{ steps.version.outputs.version }}" != "${{ steps.tag.outputs.tag }}" ]; then
+            echo "::error::Version mismatch! pyproject.toml version (${{ steps.version.outputs.version }}) ≠ release tag (${{ steps.tag.outputs.tag }})"
+            exit 1
+          else
+            echo "Version matches (${{ steps.version.outputs.version}})"
+          fi
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.5"
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+        with:
+          working-directory: dashboard
+
+      - name: Build dashboard frontend
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: make build_frontend
+
+      - name: Check that the frontend build was successful (dist folder not empty)
+        run: |
+          if [ ! -d "phosphobot/resources/dist" ]; then
+            echo "Dashboard frontend build failed: dist folder not found"
+            exit 1
+          fi
+          if [ ! "$(ls -A phosphobot/resources/dist)" ]; then
+            echo "Dashboard frontend build failed: dist folder is empty"
+            exit 1
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "phosphobot/pyproject.toml"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install x86_64 cross-compiler
+        if: matrix.os == 'linux-arm64'
+        run: |
+          # Show if g++ is installed and its version
+          g++ --version || true
+
+      - name: Set up Python and install the project
+        run: |
+          cd phosphobot
+          uv python pin 3.10
+          uv python install
+          CXX=g++ uv sync --dev
+
+      - name: Print version
+        run: |
+          cd phosphobot
+          uv run phosphobot --version
+
+      - name: Check release tag version
+        if: github.event_name == 'release'
+        run: |
+          cd phosphobot
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+          VERSION=${RELEASE_TAG#v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # With nuitka, this takes 1h10 on ubuntu-latest on Github Actions
+      # - name: Build artifact with Nuitka
+      #   run: make build OUTPUT_FILENAME=${{ matrix.output_filename }}
+
+      - name: Create tokens.toml
+        run: |
+          mkdir -p phosphobot/resources
+          cat > phosphobot/resources/tokens.toml << EOF
+          ENV = "prod"
+          SENTRY_DSN = "${{ secrets.SENTRY_DSN }}"
+          POSTHOG_API_KEY = "${{ secrets.POSTHOG_API_KEY }}"
+          POSTHOG_HOST = "${{ vars.POSTHOG_HOST }}"
+          SUPABASE_URL = "${{ vars.SUPABASE_URL }}"
+          SUPABASE_KEY = "${{ secrets.SUPABASE_KEY }}"
+          MODAL_API_URL = "${{ vars.MODAL_API_URL }}"
+          EOF
+
+      - name: Build artifact with PyInstaller
+        run: |
+          make clean_build
+          OUTPUT_FILENAME="phosphobot-${{ env.VERSION }}-${{ matrix.architecture }}.bin"
+          make build_pyinstaller OUTPUT_FILENAME="$OUTPUT_FILENAME"
+          cp "phosphobot/dist/$OUTPUT_FILENAME" "phosphobot/$OUTPUT_FILENAME"
+          echo "OUTPUT_FILENAME=$OUTPUT_FILENAME" >> $GITHUB_ENV
+
+      - name: Show full directory structure inside /phosphobot/dist
+        run: tree -L 3 phosphobot/dist || find phosphobot/dist -type f
+
+      - name: Check artifact
+        run: |
+          file phosphobot/${{ env.OUTPUT_FILENAME }}
+
+      - name: Run the built application
+        run: |
+          # start the server in background and capture BOTH stdout & stderr to server.log
+          ./phosphobot/${{ env.OUTPUT_FILENAME }} run \
+            --simulation=headless --simulate-cameras --port=8080 --host=127.0.0.1 \
+            --only-simulation --no-telemetry > server.log 2>&1 &
+          # optional: show the pid so you can kill it later if needed
+          echo $! > server.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..45}; do
+            if curl -s http://localhost:8080/status; then
+              echo "Server ready! in $i seconds" >> server.log
+              echo "Server ready! in $i seconds"
+              break
+            else
+              echo "Waiting for server..." >> server.log
+              echo "Waiting for server..."
+              sleep 1
+            fi
+          done
+
+      - name: Create phosphobot directory at /home/runner
+        run: |
+          cd /home/runner
+          rm -rf phosphobot
+          mkdir phosphobot
+
+      - name: Write HF_TOKEN to /home/runner/phosphobot/huggingface.token
+        run: |
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            echo $HF_TOKEN > ~/phosphobot/huggingface.token
+          else
+            echo $HF_TOKEN > /home/runner/phosphobot/huggingface.token
+          fi
+
+      - name: Run integration tests
+        run: cd phosphobot && uv run pytest tests/api/
+        continue-on-error: false
+
+      - name: Print server.log (always run) and upload as artifact
+        if: ${{ always() }}
+        run: |
+          echo "=== BEGIN server.log ==="
+          if [ -f server.log ]; then
+            # Print the whole file (or tail if very large)
+            # tail -n 2000 server.log || true     # alternative: only last 2000 lines
+            cat server.log || true
+          else
+            echo "No server.log file found at $(pwd)/server.log"
+            echo "Listing files for debugging:"
+            ls -la
+          fi
+          echo "=== END server.log ==="
+        # don't fail this step even if printing had errors
+        continue-on-error: true
+
+      - name: Upload server.log artifact (always)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log-${{ matrix.os }}-${{ matrix.architecture }}
+          path: server.log
+          retention-days: 7
+
+      - name: Create Debian package structure
+        run: |
+          mkdir -p debian-package/DEBIAN
+          mkdir -p debian-package/usr/local/bin
+          cat > debian-package/DEBIAN/control << EOF
+          Package: ${PACKAGE_NAME}
+          Version: ${VERSION}
+          Architecture: ${{ matrix.architecture }}
+          Maintainer: ${MAINTAINER}
+          Description: Phosphobot teleop application
+           This package contains the Phosphobot teleop binary for robot control.
+          EOF
+          cp phosphobot/${{ env.OUTPUT_FILENAME }} debian-package/usr/local/bin/${PACKAGE_NAME}
+          chmod +x debian-package/usr/local/bin/${PACKAGE_NAME}
+          dpkg-deb --build debian-package
+          mv debian-package.deb ${PACKAGE_NAME}_${VERSION}_${{matrix.architecture}}.deb
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.PACKAGE_NAME }}_${{ env.VERSION }}_${{ matrix.architecture }}.deb"
+          path: "${{ env.PACKAGE_NAME }}_${{ env.VERSION }}_${{ matrix.architecture }}.deb"
+          retention-days: 1
+
+  build_windows:
+    if: ${{ github.event_name == 'release' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
+    name: Build Windows EXE
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    outputs:
+      output_filename: ${{ env.OUTPUT_FILENAME }}
+      version: ${{ env.VERSION }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract project version
+        id: version
+        run: |
+          $VERSION = (Get-Content "phosphobot/pyproject.toml" | Select-String '^version =').ToString().Split('"')[1]
+          echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+
+      - name: Set VERSION from release tag or extracted version
+        run: |
+          if ("${{ github.event_name }}" -eq "release") {
+            $RELEASE_TAG = "${{ github.event.release.tag_name }}"
+            $VERSION = $RELEASE_TAG -replace '^v', ''
+          } else {
+            $VERSION = "${{ steps.version.outputs.version }}"
+          }
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+          echo "Final VERSION: $VERSION"
+
+      - name: Create OUTPUT_FILENAME
+        run: |
+          $OUTPUT_FILENAME = "phosphobot-$env:VERSION-amd64.exe"
+          echo "OUTPUT_FILENAME=$OUTPUT_FILENAME" >> $env:GITHUB_ENV
+          echo "OUTPUT_FILENAME: $OUTPUT_FILENAME"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "phosphobot/pyproject.toml"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23.5
+
+      - name: Check directory structure
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Get-ChildItem -Recurse -Depth 3 | Where-Object { $_.Name -eq "dashboard" }
+
+      - name: Install frontend dependencies
+        working-directory: dashboard
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Get-ChildItem
+          npm install
+
+      - name: Build dashboard frontend
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        working-directory: dashboard
+        run: |
+          npm run build
+
+      - name: Copy dashboard frontend to resources
+        run: |
+          $sourcePath = Join-Path -Path "dashboard/dist" -ChildPath "*"
+          $destinationPath = Join-Path -Path "phosphobot/resources" -ChildPath "dist"
+          if (!(Test-Path $destinationPath)) {
+            New-Item -ItemType Directory -Force -Path $destinationPath
+          }
+          Copy-Item -Path $sourcePath -Destination $destinationPath -Recurse -Force
+
+      # Rest of your steps with corrected paths
+      - name: Verify frontend build
+        run: |
+          $dashboardPath = Join-Path -Path "phosphobot/resources" -ChildPath "dist"
+          if (-not (Test-Path $dashboardPath)) {
+              Write-Error "Frontend build failed - dist directory missing"
+              exit 1
+          }
+
+      - name: Install Python dependencies with uv
+        working-directory: phosphobot # Modified path
+        run: |
+          uv python pin 3.10
+          uv sync --dev
+
+      - name: Create tokens.toml
+        run: |
+          $tokensToml = @"
+          ENV = "prod"
+          SENTRY_DSN = "${{ secrets.SENTRY_DSN }}"
+          POSTHOG_API_KEY = "${{ secrets.POSTHOG_API_KEY }}"
+          POSTHOG_HOST = "${{ vars.POSTHOG_HOST }}"
+          SUPABASE_URL = "${{ vars.SUPABASE_URL }}"
+          SUPABASE_KEY = "${{ secrets.SUPABASE_KEY }}"
+          MODAL_API_URL = "${{ vars.MODAL_API_URL }}"
+          "@
+          New-Item -Path "phosphobot/resources" -ItemType Directory -Force
+          Set-Content -Path "phosphobot/resources/tokens.toml" -Value $tokensToml
+
+      - name: Build with PyInstaller
+        working-directory: phosphobot
+        run: |
+          # Get wasmtime path and build with PyInstaller
+          $WASMTIME_PATH = uv run python -c "import wasmtime; import os; print(os.path.dirname(wasmtime.__file__))"
+          uv run pyinstaller `
+            --onefile `
+            --name "$env:OUTPUT_FILENAME" `
+            --add-data "resources:resources" `
+            --add-data "${WASMTIME_PATH}:wasmtime" `
+            --additional-hooks-dir "./hooks" `
+            --hidden-import phosphobot `
+            --collect-all phosphobot `
+            --collect-all wasmtime `
+            --clean -c `
+            phosphobot/main.py
+
+      - name: Verify Windows executable
+        run: |
+          $exePath = Join-Path -Path "phosphobot/dist" -ChildPath $env:OUTPUT_FILENAME
+          if (-not (Test-Path $exePath)) {
+              Write-Error "Executable not found at $exePath"
+              exit 1
+          }
+
+      - name: Create phosphobot directory on Windows
+        run: |
+          $phosphobotPath = "C:\Users\runneradmin\phosphobot"
+          if (-not (Test-Path $phosphobotPath)) {
+              New-Item -ItemType Directory -Force -Path $phosphobotPath
+          }
+
+      - name: Write HF_TOKEN to /home/runner/phosphobot/huggingface.token
+        run: |
+          $hfTokenPath = "C:\Users\runneradmin\phosphobot\huggingface.token"
+          if (-not (Test-Path $hfTokenPath)) {
+              Set-Content -Path $hfTokenPath -Value "${{ secrets.HF_TOKEN }}"
+          }
+
+      # These test don't work on Windows yet
+
+      # - name: Run the built application in foreground (blocks the job)
+      #   run: |
+      #     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+      #     $exePath = Join-Path -Path "phosphobot/dist" -ChildPath $env:OUTPUT_FILENAME
+      #     & $exePath run --simulation=headless --no-telemetry --simulate-cameras --only-simulation --port=8080 --host=127.0.0.1
+
+      # - name: Run the built application in background
+      #   run: |
+      #     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+      #     $exePath = Join-Path -Path "phosphobot/dist" -ChildPath $env:OUTPUT_FILENAME
+      #     $stdoutLog = "$env:TEMP\phosphobot_stdout.log"
+      #     $stderrLog = "$env:TEMP\phosphobot_stderr.log"
+
+      #     # Start the process with separate output and error log files
+      #     $p = Start-Process -FilePath $exePath `
+      #       -ArgumentList "run", "--simulation=headless", "--no-telemetry", "--simulate-cameras", "--only-simulation", "--port=8080", "--host=127.0.0.1" `
+      #       -RedirectStandardOutput $stdoutLog `
+      #       -RedirectStandardError $stderrLog `
+      #       -NoNewWindow `
+      #       -PassThru
+
+      #     # Store the PID for later termination
+      #     $p.Id | Set-Content -Path "$env:TEMP\phosphobot_pid.txt"
+
+      # - name: Wait for server to become ready (print logs on failure)
+      #   run: |
+      #     $stdoutLog = "$env:TEMP\phosphobot_stdout.log"
+      #     $stderrLog = "$env:TEMP\phosphobot_stderr.log"
+      #     $maxRetries = 10
+      #     $serverReady = $false
+
+      #     for ($i = 1; $i -le $maxRetries; $i++) {
+      #       try {
+      #         $response = Invoke-WebRequest -Uri "http://localhost:8080/status" -UseBasicParsing -TimeoutSec 2
+      #         if ($response.StatusCode -eq 200) {
+      #           Write-Host "✅ Server ready in $i seconds"
+      #           $serverReady = $true
+      #           break
+      #         }
+      #       } catch {
+      #         Write-Host "⏳ Waiting for server... ($i/$maxRetries)"
+      #       }
+      #       Start-Sleep -Seconds 1
+      #     }
+
+      #     if (-not $serverReady) {
+      #       Write-Error "❌ Server did not start in time"
+      #       Write-Host "`n--- STDOUT LOG ---"
+      #       Get-Content -Path $stdoutLog -ErrorAction SilentlyContinue
+      #       Write-Host "`n--- STDERR LOG ---"
+      #       Get-Content -Path $stderrLog -ErrorAction SilentlyContinue
+      #       exit 1
+      #     }
+
+      # - name: Run integration tests
+      #   run: |
+      #     cd phosphobot
+      #     uv run pytest tests/api/
+      #   continue-on-error: false
+
+      - name: Stop server after tests
+        run: |
+          $pidPath = "$env:TEMP\phosphobot_pid.txt"
+          if (Test-Path $pidPath) {
+            $pid = Get-Content $pidPath
+            Stop-Process -Id $pid -Force
+            Remove-Item $pidPath
+            Write-Host "🛑 Server process (PID $pid) terminated."
+          }
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.OUTPUT_FILENAME }}
+          path: phosphobot/dist/${{ env.OUTPUT_FILENAME }}
+          retention-days: 1
+
+      - name: Generate SHA256
+        run: |
+          $exePath = Join-Path -Path "phosphobot/dist" -ChildPath $env:OUTPUT_FILENAME
+          $hash = (Get-FileHash $exePath -Algorithm SHA256).Hash
+          Set-Content -Path "sha256-$${{env.OUTPUT_FILENAME}}.txt" -Value $hash
+
+      - name: Upload SHA256
+        uses: actions/upload-artifact@v4
+        with:
+          name: sha256-${{ env.OUTPUT_FILENAME }}.txt
+          path: sha256-${{ env.OUTPUT_FILENAME }}.txt
+          retention-days: 1
+
+  publish_pypi:
+    if: ${{ (github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish && (github.event.inputs.platform == 'all' || github.event.inputs.platform == 'pypi')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract current version
+        id: version
+        run: |
+          VERSION=$(grep '^version =' phosphobot/pyproject.toml | cut -d '"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if the version is the same as the one already on PyPI
+        run: |
+          PACKAGE_NAME="phosphobot"
+          VERSION=${{ steps.version.outputs.version }}
+
+          # Fetch the version list from PyPI
+          if curl --silent --fail "https://pypi.org/pypi/$PACKAGE_NAME/json" > pypi.json; then
+            if jq -e --arg VERSION "$VERSION" '.releases[$VERSION]' pypi.json > /dev/null; then
+              echo "Version $VERSION already exists on PyPI."
+              exit 1  # Optionally fail the job if version is already published
+            else
+              echo "Version $VERSION does not exist on PyPI. Proceeding..."
+            fi
+          else
+            echo "Package $PACKAGE_NAME not found on PyPI or network error."
+            exit 1
+          fi
+
+      - name: Install node
+        uses: actions/setup-node@v2
+        with:
+          node-version: "23.5"
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+        with:
+          working-directory: dashboard
+
+      - name: Build dashboard frontend
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: make build_frontend
+
+      - name: Check that the frontend build was successful (dist folder not empty)
+        run: |
+          if [ ! -d "phosphobot/resources/dist" ]; then
+            echo "Dashboard frontend build failed: dist folder not found"
+            exit 1
+          fi
+          if [ ! "$(ls -A phosphobot/resources/dist)" ]; then
+            echo "Dashboard frontend build failed: dist folder is empty"
+            exit 1
+          fi
+
+      - name: Create tokens.toml
+        run: |
+          mkdir -p phosphobot/resources
+          cat > phosphobot/resources/tokens.toml << EOF
+          ENV = "prod"
+          SENTRY_DSN = "${{ secrets.SENTRY_DSN }}"
+          POSTHOG_API_KEY = "${{ secrets.POSTHOG_API_KEY }}"
+          POSTHOG_HOST = "${{ vars.POSTHOG_HOST }}"
+          SUPABASE_URL = "${{ vars.SUPABASE_URL }}"
+          SUPABASE_KEY = "${{ secrets.SUPABASE_KEY }}"
+          MODAL_API_URL = "${{ vars.MODAL_API_URL }}"
+          EOF
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build
+        run: |
+          cd phosphobot
+          uv build
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install built wheel
+        run: |
+          python -m venv .testvenv
+          source .testvenv/bin/activate
+          uv pip install phosphobot/dist/phosphobot-*.whl
+
+      - name: Run installed app
+        run: |
+          source .testvenv/bin/activate
+          # Run in a different directory to avoid conflicts
+          cd docs
+          phosphobot --version
+          phosphobot run --no-telemetry --simulation=headless --simulate-cameras --only-simulation --port=8080 --host=127.0.0.1 &
+
+      - name: Wait for server
+        run: |
+          for i in {1..45}; do
+            if curl -s http://localhost:8080/status; then
+              echo "Server ready! in $i seconds" >> server.log
+              echo "Server ready! in $i seconds"
+              break
+            else
+              echo "Waiting for server..." >> server.log
+              echo "Waiting for server..."
+              sleep 1
+            fi
+          done
+
+      - name: Run integration tests
+        run: |
+          cd phosphobot
+          uv run pytest tests/api/
+        continue-on-error: false
+
+      - name: Publish to PyPI
+        run: |
+          cd phosphobot
+          uv publish
+
+  publish_apt:
+    needs: build_linux
+    if: ${{ (github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v2"
+        env:
+          GCP_JSON_CREDENTIALS: ${{ secrets.GCP_JSON_CREDENTIALS }}
+        with:
+          credentials_json: ${{ secrets.GCP_JSON_CREDENTIALS }}
+
+      - name: Set up GCP Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Set VERSION
+        run: echo "VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')" >> $GITHUB_ENV
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Upload Debian packages to Artifact Registry
+        run: |
+          for DEB_FILE in $(find . -name "*.deb"); do
+            echo "📦 Uploading $DEB_FILE..."
+            gcloud artifacts apt upload ${{ env.REPO_NAME_APT }} \
+              --location=${{ env.REGION }} \
+              --source="$DEB_FILE"
+          done
+
+  create_release:
+    if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish) }}
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: ${{ env.HOMEBREW_TAP }}
+          tag_name: "v${{ env.VERSION }}"
+          name: "Release v${{ env.VERSION }}"
+          draft: false
+          prerelease: false
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+  publish_homebrew:
+    needs: [build_macos, create_release]
+    if: ${{ (github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION
+        run: echo "VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')" >> $GITHUB_ENV
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          cp phosphobot-${{ env.VERSION }}*.bin release-assets/
+          cp sha256-*.txt release-assets/
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: ${{ env.HOMEBREW_TAP }}
+          tag_name: "v${{ env.VERSION }}"
+          files: release-assets/*
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Gather SHA256 values
+        id: shas
+        run: |
+          ARM64_SHA=$(cat release-assets/sha256-phosphobot-${{ env.VERSION }}-arm64.bin.txt)
+          X86_64_SHA=$(cat release-assets/sha256-phosphobot-${{ env.VERSION }}-x86_64.bin.txt)
+          echo "ARM64_SHA=$ARM64_SHA" >> $GITHUB_ENV
+          echo "X86_64_SHA=$X86_64_SHA" >> $GITHUB_ENV
+
+      - name: Checkout Homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.HOMEBREW_TAP }}
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update Homebrew formula
+        run: |
+          cat > homebrew-tap/Formula/${{ env.FORMULA_NAME }}.rb << EOF
+          class Phosphobot < Formula
+            desc "Phosphobot teleop application for robot control"
+            homepage "https://github.com/phospho-app/phosphobot"
+            license "MIT"
+            version "${{ env.VERSION }}"
+            
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/${{ env.HOMEBREW_TAP }}/releases/download/v${{ env.VERSION }}/phosphobot-${{ env.VERSION }}-arm64.bin"
+                sha256 "${{ env.ARM64_SHA }}"
+              else
+                url "https://github.com/${{ env.HOMEBREW_TAP }}/releases/download/v${{ env.VERSION }}/phosphobot-${{ env.VERSION }}-x86_64.bin"
+                sha256 "${{ env.X86_64_SHA }}"
+              end
+            end
+            
+            def install
+              arch = Hardware::CPU.arm? ? "arm64" : "x86_64"
+              bin_name = "phosphobot-${{ env.VERSION }}-#{arch}.bin"
+              chmod "+x", bin_name
+              bin.install bin_name => "phosphobot"
+            end
+            
+            test do
+              system "#{bin}/phosphobot", "--version"
+            end
+          end
+          EOF
+
+      - name: Commit and push formula
+        run: |
+          cd homebrew-tap
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/${{ env.FORMULA_NAME }}.rb
+          git commit -m "Update ${{ env.FORMULA_NAME }} to ${{ env.VERSION }}"
+          git push
+
+  publish_windows:
+    needs: [build_windows, create_release]
+    if: ${{ (github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION
+        run: echo "VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')" >> $GITHUB_ENV
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: phosphobot-*.exe
+          merge-multiple: true
+
+      # Debug step to see what files were actually downloaded
+      - name: List downloaded files
+        run: |
+          echo "Files in current directory:"
+          ls -la
+          echo "All .exe files:"
+          find . -name "*.exe" -type f
+
+      # Find the actual exe file and set it as an environment variable
+      - name: Find Windows executable
+        run: |
+          EXE_FILE=$(find . -name "phosphobot-*-amd64.exe" -type f | head -1)
+          if [ -z "$EXE_FILE" ]; then
+            echo "No exe file found matching pattern phosphobot-*-amd64.exe"
+            echo "Available files:"
+            find . -name "*.exe" -type f
+            exit 1
+          fi
+          echo "Found exe file: $EXE_FILE"
+          echo "WINDOWS_EXE_PATH=$EXE_FILE" >> $GITHUB_ENV
+
+      - name: Upload Windows EXE to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: ${{ env.HOMEBREW_TAP }}
+          tag_name: "v${{ env.VERSION }}"
+          files: ${{ env.WINDOWS_EXE_PATH }}
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}

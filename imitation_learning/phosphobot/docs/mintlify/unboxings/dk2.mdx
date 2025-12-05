@@ -1,0 +1,124 @@
+---
+title: "Starter pack unboxing (DK2)"
+description: "Unbox and set up your phospho starter pack."
+---
+
+import InstallCode from '/snippets/install-code.mdx';
+
+In this guide, we will unbox and set up the **phospho starter pack** (DK2). 
+
+<Note>We are currently taking orders [here](https://robots.phospho.ai).</Note>
+
+![packshot phospho starter pack dk2](/assets/packshot-dk2.jpg)
+
+## What's in the box?
+
+<Info>phospho dev kits come with EU power plugs.</Info>
+
+- **2 Robot arm**
+    - 2x SO-100 robot arm 
+    - 2x 12V power source (for the arms)
+    - 2x USB-C to USB-C cable
+    - 4x Table clamps
+- **2 Wrist Cameras**
+    - 2x Wrist cameras
+    - 2x Camera cables (USB)
+- **Access to the [Meta Quest app](../examples/teleop)** for VR control
+
+<iframe
+  className="w-full aspect-video"
+  src="https://youtube.com/embed/eOB_BhM1oGM"
+  title="phospho starter pack unboxing"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+
+
+## 1. Attach the SO-100 arms
+
+Find a table and fix each SO-100 robot arm using the table clamps in the kit (see image below). 
+
+<Warning>Make sure the arm is securely fastened and won't move. Clear away any clutter that could get in the way of the arm's movement.</Warning>
+
+![SO-100 fixed using clamps](/assets/so100clamps.jpg)
+
+## 2. Install the wrist cameras
+
+For safe transport, the wrist cameras are not installed on the robot arms. You don't need screws or special tools to install them, just pop them in the holes on the robot arms.
+
+Please refer to the video below to see how to install the wrist cameras.
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/dxsEUsX_v_o" 
+    title="how to install the wrist camera" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+If you need to transport the robot arms, you can remove the wrist cameras by pulling them out of the holes.
+
+
+## 3. Plug everything together
+
+In this order:
+
+1. Plug each _SO-100 robot arm_ into the power supply using the **black** 12V power supply.
+2. Plug each of the **USB-C cable** into the _SO-100 robot arm_ and the other into your computer. 
+3. Plug the cable to the **wrist cameras** and into your computer.
+
+## 4. Install and run the phosphobot software
+
+Once everything is connected and powered on, run the following command in a terminal to install the phosphobot software:
+
+
+<InstallCode/>
+
+Then, fire up the the server:
+
+```bash
+phosphobot run
+```
+
+Go to `localhost` in your web browser to access the phosphobot dashboard. Go to **Control** to control your robot using only your keyboard!
+
+![phosphobot dashboard](/assets/phosphobot-dashboard.png)
+
+## What's next?
+
+<CardGroup>
+<Card
+  title="Control your robot"
+  icon="gamepad"
+  iconType="regular"
+  href="/basic-usage/teleop"
+>
+  Teleoperate a real robot
+</Card>
+<Card
+  title="Record a dataset"
+  icon="database"
+  iconType="regular"
+  href="/basic-usage/dataset-recording"
+>
+  How to record a dataset with your robot
+</Card>
+<Card
+  title="Train an AI model"
+  icon="brain"
+  iconType="regular"
+  href="/basic-usage/training"
+>
+  How to train an AI model from a dataset you recorded
+</Card>
+<Card
+  title="Discord"
+  icon="discord"
+  iconType="regular"
+  href="https://discord.gg/cbkggY6NSK"
+>
+  Join the Discord to ask questions, get help from others and get updates
+</Card>
+</CardGroup>

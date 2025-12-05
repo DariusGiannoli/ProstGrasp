@@ -1,0 +1,32 @@
+<CodeGroup>
+
+```bash macOS
+curl -fsSL https://raw.githubusercontent.com/phospho-app/phosphobot/main/install.sh | bash
+```
+
+```bash Linux
+curl -fsSL https://raw.githubusercontent.com/phospho-app/phosphobot/main/install.sh | sudo bash
+```
+
+```powershell Windows
+powershell -ExecutionPolicy ByPass -Command "irm https://raw.githubusercontent.com/phospho-app/phosphobot/main/install.ps1 | iex"
+```
+
+```bash uv (Linux and macOS)
+# Install uv: https://docs.astral.sh/uv/
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Run phosphobot
+uvx phosphobot@latest run
+```
+
+```powershell uv (Windows)
+# Install uv: https://docs.astral.sh/uv/
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Run phosphobot
+uvx phosphobot@latest run
+```
+
+
+</CodeGroup>

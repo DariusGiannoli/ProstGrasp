@@ -1,0 +1,69 @@
+---
+title: "Core Robotics Concepts"
+description: "The basics to get started in robotics."
+---
+
+In this article, we'll cover some of the core concepts in robotics. We will also cover some concepts of AI and machine learning that are relevant to robotics.
+
+## What are the components of a robot?
+
+Your robot is made up of a few key components:
+
+![junior](/assets/junior.jpg)
+
+- **Joints/Actuators**: The motors of the robot that allow the links to move relative to each other.
+- **Links**: The rigid plastic parts of the robot that are connected by joints.
+- **End effector**: The last part of the robot that interacts with the environment (e.g., a gripper).
+- **Sensors**: The robot's eyes and ears. They allow the robot to perceive the world around it.
+- **Controller**: The robot's brain. It processes the sensor data and sends commands to the actuators.
+
+The main challenge is coordinating all these components to perform specific tasks.
+
+How do you program a robot to do something? How can it learn to do something new? How can it adapt to changes in its environment? These are all questions robotics researchers are trying to answer. 
+
+The most basic way to control a robot is to send it a sequence of commands. For example, you can tell the robot to move its arm to a specific position. This is called **kinematics**.
+
+<Card icon="graduation-cap" title="Learn more" href="/learn/kinematics">
+Learn more about kinematics
+</Card>
+
+## What is a policy in robotics?
+
+A policy defines how the robot makes decisions and takes actions based on its environment. It is a function that maps the current state of the robot to an action. In concrete terms, it tells the robot what to do in a given situation.
+
+For example, a policy for a robot vacuum cleaner might be:
+- If the robot detects dirt, move towards it.
+- If the robot detects a wall, turn left.
+
+<Card icon="graduation-cap" title="Learn more" href="/learn/policies">
+Learn more about policies and AI in robotics
+</Card>
+
+## Vocabulary of AI robotics
+
+The vocabulary of AI robotics can be a bit confusing. Here are some key terms to help you understand the concepts better.
+
+### Imitation learning vs. Reinforcement learning
+
+- **Imitation learning**: A type of training where the robot learns from examples provided by a human or another robot. This is often used to teach the robot how to perform specific tasks.
+- **Reinforcement learning**: A type of training where the robot learns by trial and error. It receives rewards for good actions and penalties for bad actions, and it adjusts its policy accordingly.
+
+### Robotics vocabulary
+
+The robotics vocabulary heavily relies on the concepts of reinforcement learning. Here are some key terms:
+
+- **Agent**: The robot itself. It interacts with the environment and learns from its experiences.
+- **State**: The current configuration of the robot. This includes the positions of the joints, the orientation of the end effector, and any sensor readings.
+- **Action**: The movement or command the robot executes in response to its current state.
+- **Reward**: A numerical value assigned based on how well the robot's action achieves its objective. The robot's goal is to maximize this reward over time.
+- **Environment**: The world in which the robot operates. This includes the objects in the environment, the robot itself, and any other agents.
+- **Policy**: The strategy the robot uses to decide which action to take in a given state. It can be deterministic (always taking the same action in the same state) or stochastic (taking different actions in the same state). [Learn more](/learn/policies)
+
+### Machine learning vocabulary
+
+As policies are often learned from data, the vocabulary of machine learning is also relevant. Here are some key terms:
+
+- **Model**: A mathematical representation of the policy. It takes the current state as input and outputs the action to be taken.
+- **Training**: The process of teaching the robot to improve its policy. This is done by providing it with examples of good and bad actions and adjusting its policy based on the rewards it receives.
+- **Inference**: The process of using a trained policy to control the robot in real-time. This is done by feeding the robot's current state into the policy and executing the resulting action.
+- **Dataset**: A collection of examples used to train the robot's policy. This can include images, sensor readings, natural languages instructions, and actions taken by the robot. [The most common format is LeRobot v2](/learn/lerobot-dataset)

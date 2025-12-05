@@ -1,0 +1,140 @@
+site_name: phospho platform docs
+site_url: https://phospho-app.github.io/docs/
+repo_url: https://github.com/phospho-app/phospho
+
+
+theme:
+  name: material
+  icon:
+    logo: fontawesome/solid/vial
+  favicon: favicon.png
+  features:
+    - content.tabs.link
+    - navigation.tabs
+  palette:
+    # Palette toggle for dark mode
+    - scheme: default
+      primary: green
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for light mode
+    - scheme: slate
+      primary: green
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+
+plugins:
+  - glightbox
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.blocks.caption
+
+extra:
+  social:
+    - icon: fontawesome/brands/github 
+      link: https://github.com/phospho-app/
+    - icon: fontawesome/brands/x-twitter 
+      link: https://x.com/phospho_ai
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/phospho-app/posts/?feedView=all
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/m8wzBGQA55
+
+nav:
+  - Platform:
+      - index.md
+      - getting-started.md
+      - Import data:
+          - import-data/import-file.md
+          - import-data/api-integration.md
+          - import-data/import-langsmith.md
+          - import-data/import-langfuse.md
+          - import-data/tracing.md
+      - self-hosting.md
+      - cli.md
+
+      - Analytics:
+        - analytics/ab-test.md
+        - analytics/events.md
+        - analytics/tagging.md
+        - analytics/clustering.md
+        - User analytics:
+            - analytics/sessions-and-users.md
+            - analytics/language.md
+            - analytics/sentiment-analysis.md
+        - analytics/user-feedback.md
+        - analytics/usage-based-billing.md
+
+      - Connectors:
+          - Python:
+              - integrations/python/logging.md
+              - Logging examples in Python:
+                  - integrations/python/examples/openai-agent.md
+                  - integrations/python/examples/openai-streamlit.md
+              - integrations/python/analytics.md
+              - Discover the Lab:
+                  - local/quickstart.md
+                  - local/custom-job.md
+                  - local/optimize.md
+                  - local/llm-provider.md
+              - integrations/python/testing.md
+          - integrations/javascript/logging.md
+          - Langchain & Langsmith:
+              - integrations/langchain.md
+              - import-data/import-langsmith.md
+          - import-data/import-langfuse.md
+          - integrations/supabase.md
+
+      - Integrations:
+          - integrations/argilla.md
+          - integrations/postgresql.md
+          - integrations/powerbi.md
+          - integrations/python/analytics.md
+      
+      - Models API:
+        - models/embeddings.md
+        - models/llm.md
+        - models/tak.md
+
+  - Guides:
+      - guides/welcome-guide.md
+      - guides/getting-started.md
+      - guides/LLM-judge.md
+      - guides/user-intent.md
+      - guides/understand-your-data.md
+      - guides/export-dataset-argilla.md
+
+  - API Reference:
+      - api-reference/introduction.md
+
+  - Examples:
+      - examples/introduction.md
+
+  - Go to Platform:
+      - https://platform.phospho.ai
+

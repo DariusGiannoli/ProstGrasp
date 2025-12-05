@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>phospho dashboard</title>
+    <script>
+      // Immediately apply theme to prevent FOUC
+      (function() {
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          
+          let theme = savedTheme || 'system';
+          
+          if (theme === 'system') {
+            theme = systemPrefersDark ? 'dark' : 'light';
+          }
+          
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          // Fail silently - theme will be applied by React
+        }
+      })();
+    </script>
+    <style>
+      /* Critical CSS to prevent white flash */
+      :root {
+        color-scheme: light dark;
+      }
+      
+      html {
+        /* Default to light theme colors - matches CSS variables */
+        background-color: oklch(1 0 0); /* --background in light mode */
+        color: oklch(0.145 0 0); /* --foreground in light mode */
+      }
+      
+      html.dark {
+        /* Dark theme colors - matches CSS variables */
+        background-color: oklch(0.145 0 0); /* --background in dark mode */
+        color: oklch(0.985 0 0); /* --foreground in dark mode */
+      }
+      
+      body {
+        /* Inherit background from html */
+        background-color: inherit;
+        color: inherit;
+        /* Prevent layout shift */
+        margin: 0;
+        padding: 0;
+      }
+      
+      /* Ensure smooth transition when theme changes */
+      html {
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

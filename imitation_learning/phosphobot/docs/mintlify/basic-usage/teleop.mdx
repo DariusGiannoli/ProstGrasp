@@ -1,0 +1,170 @@
+---
+title: "Control your robot arm"
+description: "How to remote control a robot arm with a keyboard, in VR, with an API or a leader arm?"
+---
+
+import InstallCode from '/snippets/install-code.mdx';
+import GetMQApp from '/snippets/get-mq-app.mdx';
+import TeleopInstructions from '/snippets/teleop-instructions.mdx';
+
+phosphobot lets you control the SO-100 or SO-101 robot arm with:
+
+- your keyboard
+- a game controller
+- the HTTP API
+- the Meta Quest app
+- a leader arm or another follower arm
+- by playing back a recording
+- with AI
+
+You can also control other kind of robots and [write your own controllers.](https://github.com/phospho-app/phosphobot/tree/main/phosphobot)
+
+<Note>
+ If you don't have a robot arm, you can get hardware [here](https://robots.phospho.ai/).
+</Note>
+
+## Prerequisites
+
+To control your robot, you need to install [phosphobot](/installation). Make sure the robot was [calibrated with phosphobot](/so-100/quickstart). No robot? Get one [here](https://robots.phospho.ai/?utm_source=docs).
+
+<InstallCode/>
+
+## Control with a keyboard
+
+Use `phosphobot` to control your SO-100, SO-101, or any supported robot arm with your keyboard, using the **arrow keys** to move the robot arm in the desired direction.
+
+<iframe
+  className="w-full aspect-video"
+  src="https://www.youtube.com/embed/Yun4Twtm_wc"
+  title="so100 so101 robot arm keyboard control"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+
+Go to `localhost` in your web browser to access the phosphobot dashboard. Go to **Keyboard Control**. Click on the **Start robot** button to start controlling the robot arm with your keyboard. Click on the **Stop robot** button to stop controlling the robot arm with your keyboard.
+
+
+## Control with a game controller
+
+You can control your robot arm using standard game controllers (Xbox, PlayStation, or similar) for more intuitive and ergonomic control.
+
+<iframe
+  className="w-full aspect-video"
+  src="https://www.youtube.com/embed/JQupdd2VOqA"
+  title="so100 so101 robot arm gamepad control"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+1. **Connect your controller** to your computer via USB or Bluetooth.
+
+2. Go to `localhost` in your web browser to access the phosphobot dashboard. Navigate to the **Control** page and select the **Gamepad control** tab.
+
+3. **Press any button** on your controller to activate it. The dashboard will detect your controller automatically.
+
+4. The robot will **start moving automatically** once the gamepad is detected.
+
+**Control mapping:**
+- **Left stick**: Rotate (X-axis) and move up/down (Y-axis)
+- **Right stick**: Strafe left/right (X-axis) and move forward/backward (Y-axis)
+- **D-Pad or face buttons (ABXY)**: Wrist pitch and roll control
+- **L1/R1 bumpers**: Toggle gripper open/close
+- **L2/R2 triggers**: Analog gripper control (0-100%)
+- **Start/Menu**: Move arm to sleep position
+
+<Info>
+  The gamepad control feature requires a browser with Gamepad API support (Chrome/Edge 21+, Firefox 29+, Safari 10.1+).
+</Info>
+
+
+## Control in Virtual Reality 
+
+Control your robot arm in virtual reality with the Meta Quest app. This app lets you control your robot arm in VR, using the Meta Quest controllers.
+
+<GetMQApp/>
+
+<iframe
+  className="w-full aspect-video"
+  src="https://www.youtube.com/embed/AQ-xgCTdj_w?si=NDTtX1nISABjzmbA"
+  title="VR Control tutorial"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+
+<TeleopInstructions/>
+
+
+## Control with a leader arm
+
+phosphobot supports one or multiple leader arms. A leader arm is a robot arm that you can use to control another robot arm, called the follower arm. The leader arm is used to control the follower arm in real time, allowing you to control the follower arm as if you were physically present.
+
+<iframe
+  className="w-full aspect-video"
+  src="https://www.youtube.com/embed/sTJ4D8w7LhY"
+  title="VR Control tutorial"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+1. Plug the leader arm.
+
+2. Calibrate the leader arm the same way you calibrated the robot arm.
+
+3. Go to the phosphobot dashboard, in the **Control** page and click on the **Leader Arm** section.
+
+<Note>You have more than one pair leader/follower arms, using the + button to add more</Note>
+
+### Does the leader arm need to be calibrated?
+
+Yes, the leader arm needs to be calibrated the same way you calibrated the robot arm. The calibration is done in the **Calibration** page of the phosphobot dashboard.
+
+### Can you do bimanual teleoperation with two leader arms? Can I control two robot arms with two leader arms?
+
+Yes, you can control two robot arms with two leader arms. You need to plug both leader arms and calibrate them the same way you calibrated the robot arms. Then, go to the **Control** page of the phosphobot dashboard and click on the **Leader Arm** section. You can add multiple leader arms by clicking on the + button.
+
+### Is the leader arm mandatory?
+
+No, the leader arm is optional. You can control the robot arm with the keyboard, the game controller, the HTTP API, or the Meta Quest app without a leader arm. The leader arm is just an additional way to control the robot arm.
+
+## Control with the HTTP API
+
+Once your phosphobot server is running, you can send your first command to the robot arm.
+
+<Warning>
+  Make sure the robot is well fixed and the area around is clear before sending
+  any command.
+</Warning>
+
+1. Go to the interactive API docs on the phosphobot dashboard: [localhost/docs](http://localhost/docs). On the control module, the address [phosphobot.local/docs](http://phosphobot.local/docs). This page lets you send commands to the robot arm.
+
+2. Trigger the `/move/init` endpoint to initialize the robot (click `Try it out` and then press `Execute`).
+
+3. Your robot arm moves to the default position. _It's alive!_ 🎉
+
+4. Now, you can call the `/move/absolute` endpoint to move the robot to a specific position. The distances are in centimeters, and the angles in degrees.
+
+
+## Control by playing back a recording
+
+You can [record episodes](./dataset-recording.mdx) and then play them back to control the robot arm using [the recording feature](../recording/play-recording). 
+
+## Control with AI 
+
+You can [train an AI model](./training) and then run [AI control.](./inference) Basically, the AI model will predict the next position of the robot based on the previous position and what the cameras sees. This is a whole [area of research.](../learn/policies)
+
+## What's next?
+
+<Card
+  title="Record a dataset"
+  icon="database"
+  iconType="regular"
+  href="/basic-usage/dataset-recording"
+>
+  How to record a dataset with your robot
+</Card>

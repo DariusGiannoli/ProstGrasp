@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="S0101_4MOTORS">
+  
+  <!-- BASE FIXE (pas de moteur 1) -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0.02" rpy="0 0 0" />
+      <mass value="0.2" />
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.04" />
+      </geometry>
+      <material name="gray">
+        <color rgba="0.7 0.7 0.7 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.04" />
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- MOTEUR 2: SHOULDER LIFT (Pitch) - Gear Ratio 1/345 -->
+  <link name="shoulder_link">
+    <inertial>
+      <origin xyz="0 0.06 0.03" rpy="0 0 0" />
+      <mass value="0.12" />
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00003" iyz="0" izz="0.00006" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02" length="0.11" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0.2 0.5 0.9 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02" length="0.11" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="motor_2_shoulder_pitch" type="revolute">
+    <origin xyz="0 0 0.04" rpy="1.5708 0 0" />
+    <parent link="base_link" />
+    <child link="shoulder_link" />
+    <axis xyz="1 0 0" />
+    <limit lower="-1.5708" upper="1.5708" effort="2.0" velocity="20" />
+    <dynamics damping="0.1" friction="0.1" />
+  </joint>
+
+  <!-- BRAS (pas de coude - moteur 3 supprimé) -->
+  <link name="arm_link">
+    <inertial>
+      <origin xyz="0 0 0.08" rpy="0 0 0" />
+      <mass value="0.15" />
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.00014" iyz="0" izz="0.00005" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.08" rpy="0 0 0" />
+      <geometry>
+        <box size="0.03 0.03 0.16" />
+      </geometry>
+      <material name="blue" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.08" rpy="0 0 0" />
+      <geometry>
+        <box size="0.03 0.03 0.16" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="arm_fixed" type="fixed">
+    <origin xyz="0 0.11 0.03" rpy="0 0 0" />
+    <parent link="shoulder_link" />
+    <child link="arm_link" />
+  </joint>
+
+  <!-- MOTEUR 4: WRIST FLEX (Wrist Pitch) - Gear Ratio 1/147 -->
+  <link name="wrist_pitch_link">
+    <inertial>
+      <origin xyz="0 -0.03 0" rpy="0 0 0" />
+      <mass value="0.07" />
+      <inertia ixx="0.00002" ixy="0" ixz="0" iyy="0.00002" iyz="0" izz="0.00003" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.015" length="0.05" />
+      </geometry>
+      <material name="gray" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.015" length="0.05" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="motor_4_wrist_pitch" type="revolute">
+    <origin xyz="0 0 0.16" rpy="-1.5708 0 0" />
+    <parent link="arm_link" />
+    <child link="wrist_pitch_link" />
+    <axis xyz="1 0 0" />
+    <limit lower="-1.67" upper="1.67" effort="1.0" velocity="20" />
+    <dynamics damping="0.05" friction="0.05" />
+  </joint>
+
+  <!-- MOTEUR 5: WRIST ROLL - Gear Ratio 1/147 -->
+  <link name="wrist_roll_link">
+    <inertial>
+      <origin xyz="0 -0.025 0" rpy="0 0 0" />
+      <mass value="0.09" />
+      <inertia ixx="0.00004" ixy="0" ixz="0" iyy="0.00003" iyz="0" izz="0.00005" />
+    </inertial>
+    <visual>
+      <origin xyz="0 -0.025 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.03 0.05 0.02" />
+      </geometry>
+      <material name="gray" />
+    </visual>
+    <collision>
+      <origin xyz="0 -0.025 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.03 0.05 0.02" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="motor_5_wrist_roll" type="revolute">
+    <origin xyz="0 -0.05 0" rpy="0 -3.14159 0" />
+    <parent link="wrist_pitch_link" />
+    <child link="wrist_roll_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14159" upper="3.14159" effort="1.0" velocity="20" />
+    <dynamics damping="0.05" friction="0.05" />
+  </joint>
+
+  <!-- MOTEUR 6: GRIPPER (Fixed Jaw) - Gear Ratio 1/147 -->
+  <link name="gripper_fixed">
+    <inertial>
+      <origin xyz="0.005 -0.03 0" rpy="0 0 0" />
+      <mass value="0.05" />
+      <inertia ixx="0.00002" ixy="0" ixz="0" iyy="0.00002" iyz="0" izz="0.00003" />
+    </inertial>
+    <visual>
+      <origin xyz="0.01 -0.03 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.02 0.06 0.01" />
+      </geometry>
+      <material name="red">
+        <color rgba="0.9 0.2 0.2 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.01 -0.03 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.02 0.06 0.01" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="gripper_fixed_joint" type="fixed">
+    <origin xyz="0 -0.05 0" rpy="0 0 0" />
+    <parent link="wrist_roll_link" />
+    <child link="gripper_fixed" />
+  </joint>
+
+  <!-- MOTEUR 6: GRIPPER (Moving Jaw) -->
+  <link name="gripper_moving">
+    <inertial>
+      <origin xyz="-0.01 -0.03 0" rpy="0 0 0" />
+      <mass value="0.02" />
+      <inertia ixx="0.000011" ixy="0" ixz="0" iyy="0.000003" iyz="0" izz="0.000009" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.01 -0.03 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.02 0.06 0.01" />
+      </geometry>
+      <material name="red" />
+    </visual>
+    <collision>
+      <origin xyz="-0.01 -0.03 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.02 0.06 0.01" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="motor_6_gripper" type="revolute">
+    <origin xyz="0 -0.05 0" rpy="0 0 0" />
+    <parent link="wrist_roll_link" />
+    <child link="gripper_moving" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.21" upper="0.8" effort="1.0" velocity="20" />
+    <dynamics damping="0.02" friction="0.02" />
+    <mimic joint="motor_6_gripper" multiplier="-1" offset="0" />
+  </joint>
+
+</robot>

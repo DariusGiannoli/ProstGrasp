@@ -1,0 +1,16 @@
+[project]
+name = "simulation"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.8.0, <3.9"
+dependencies = [
+    "pybullet>=3.2.7",
+    "setuptools>=75.3.2",
+]
+
+
+[tool.uv.sources]
+# Troubleshooting: on MacOS Silicon, you may need to compile pybullet from source.
+# If so, follow the guide in the README.md file and uncomment the line below to run make prod_gui
+pybullet = { path = "../../../phosphobot/bullet3", editable = true }

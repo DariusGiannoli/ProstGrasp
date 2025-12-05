@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Base Cameras</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+      }
+
+      .camera-info {
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        text-align: center;
+      }
+
+      .camera-info h2 {
+        font-size: 18px;
+        margin: 0 0 10px;
+        color: #333;
+      }
+
+      .camera-info p {
+        margin: 5px 0;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .error {
+        color: red;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Camera Test Results</h1>
+    <div class="container" id="cameraContainer">
+      <p>Loading camera data...</p>
+    </div>
+
+    <script>
+      async function fetchCameraData() {
+        const container = document.getElementById("cameraContainer");
+        try {
+          const response = await fetch("http://localhost:80/test_base_cameras");
+          if (!response.ok) {
+            throw new Error("Failed to fetch camera data");
+          }
+
+          const cameraData = await response.json(); // Camera data in the format { index: type }
+          container.innerHTML = ""; // Clear the loading message
+
+          if (Object.keys(cameraData).length === 0) {
+            container.innerHTML = "<p>No cameras found.</p>";
+            return;
+          }
+
+          Object.entries(cameraData).forEach(([index, type]) => {
+            const cameraDiv = document.createElement("div");
+            cameraDiv.className = "camera-info";
+            cameraDiv.innerHTML = `
+              <h2>Camera Index: ${index}</h2>
+              <p>Type: ${type}</p>
+            `;
+            container.appendChild(cameraDiv);
+          });
+        } catch (error) {
+          container.innerHTML = `<p class="error">Error loading camera data: ${error.message}</p>`;
+          console.error("Error fetching camera data:", error);
+        }
+      }
+
+      // Fetch camera data on page load
+      fetchCameraData();
+    </script>
+  </body>
+</html>

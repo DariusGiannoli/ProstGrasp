@@ -1,0 +1,119 @@
+---
+title: "How to train a good AI model"
+description: "Best practices for recording a dataset for imitation learning in robotics"
+---
+
+import GetMQApp from '/snippets/get-mq-app.mdx';
+
+
+It can be frustrating when your AI robotics model doesn't perform as expected after hours of training. Imitation learning models are powerful mimics, but **they don't understand the intent** behind an action; **they only learn to replicate the patterns they see.** This means that if a model is failing, the root cause often isn't a bug in the model itself, but rather an issue in the data it was trained on or the way it was trained.
+
+The principle of **"garbage in, garbage out"** is especially true here. A model trained on ambiguous, inconsistent, or noisy data will produce ambiguous, inconsistent, or noisy behavior. This guide will walk you through the most critical areas to focus on, starting with the foundation of any good model: the dataset.
+
+We'll share with you the tips and tricks we've collected during our experiments and research to give you the best chance of success. 
+
+## Improving Your Dataset Collection
+
+The quality and structure of your demonstration data will have the single biggest impact on your model's performance. Think of data collection as teaching by example—the clearer your examples, the better your student will learn.
+
+<iframe
+  className="w-full aspect-video"
+  src="https://www.youtube.com/embed/kwyqUvdHJFk?si=mq6d4yAimxHOEu9K"
+  title="YouTube video player"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+### Control the Environment
+
+A consistent and controlled environment is essential for collecting reliable data. Your goal is to eliminate random variables that could confuse the model. Keep the robot's operating area free of unnecessary changes, like people walking by or other machinery moving in the background. Most importantly, ensure the lighting is even and stable across all recordings. Shadows and glare can obscure objects or change their appearance, so use diffused lamps or ring lights to maintain uniformity and avoid relying on natural light, which varies throughout the day.
+
+### Optimize Your Camera Setup
+
+Cameras are the eyes of your robot, and their configuration directly impacts what the model can "see" and learn. For best results, try to match the camera arrangement used to pre-train your foundation model. For instance, a model like [pi-zero by Physical Intelligence](https://physical-intelligence.github.io/pi-zero/) was trained with wrist cameras on each arm and a first-person view (FPV) camera. Positioning these cameras to clearly capture the robot's gripper, the target object, and the overall workspace is crucial. Before recording, ask yourself: “Could I control the robot effectively using only these camera views?” If the answer is no, your model will struggle too.
+
+### Demonstrate Clear Actions
+
+How the robot approaches and interacts with objects forms the core of the learned task. Plan the robot's movements so the target object is visible to the cameras—especially the wrist cameras—for as long as possible. Avoid having the gripper block the view of the object during the final approach. Instead, angle the arm to keep both the gripper and the target in sight. This clarity helps the model build a strong connection between its movements and the outcome. Strive for a consistent and repeatable strategy for each task, as this helps the model learn a reliable pattern of behavior.
+
+### Build a Diverse and Balanced Dataset
+
+A model that only sees one way to do a task will be brittle. A diverse dataset teaches the model to generalize across different but related scenarios. Introduce intentional variations by changing the starting position of the target object (e.g., left, right, center) or by using objects of different shapes, sizes, and colors. This defines the "learning space" where your model can operate successfully. 
+
+However, it's important to balance diversity with consistency. Avoid recording "outlier" episodes that are radically different from the rest, as they can mislead the model and teach it incorrect or unsafe behaviors. For example, if you're traning a model to pick up a cup, don't include episodes where the robot **fails** to pick it up, or episodes where it **pushes** the cup instead of grasping it. These outliers can confuse the model and lead to poor performance.
+
+### Collect the Right Amount of Data
+
+While quality is key, quantity also matters. A good starting point for a single task is **40-50 high-quality episodes**. An "episode" is one complete execution of the task, from start to finish. 
+
+For more complex tasks or when fine-tuning large models, **you may need more.**
+
+For example, when fine-tuning a model like **GR00T N1.5**, a common recommendation is to record longer episodes (30-40 seconds each) for a total of **20 to 30 minutes of recorded data**. You can see a great [reference dataset for a table cleanup task](https://huggingface.co/spaces/lerobot/visualize_dataset?path=%2Fyouliangtan%2Fso100-table-cleanup%2Fepisode_0) to understand the quality and structure to aim for.
+
+Recording data can get boring for humans. Try to make it fun using **VR control**, making breaks, and rewarding yourself for reaching milestones. Pick an exciting demo that you find meaningful and a demo that you'll enjoy sharing on social media. This will help you stay motivated and engaged throughout the process.
+
+<GetMQApp/>
+
+## Final Sanity Checks Before Scaling
+
+Robotics datasets are time-consuming to create and difficult to edit. Before you invest heavily in collecting hundreds of episodes, it's wise to perform a few checks to ensure your time is well spent.
+
+First, record just a handful of episodes and use a tool like the [LeRobot Visualize Dataset space](https://huggingface.co/spaces/lerobot/visualize_dataset) to confirm the data was saved correctly and loads without errors. Then, run a full, small-scale cycle: collect a small dataset (e.g., 10 episodes), train a model for a few epochs, and test its ability to perform the task. Once a model is trained, a great test is to see if it can at least replay one of the training episodes perfectly. If this mini-pipeline works, you can scale up your data collection with confidence.
+
+
+## Beyond the Dataset: Hyperparameter Tuning
+
+If your dataset is solid but the model still struggles, the issue may lie in the training configuration. Hyperparameters are the settings that control the learning process itself. While default values are often a good start, tuning them can lead to significant performance gains.
+
+Each model have different hyperparameters, but the idea is always the same: tinker with the settings to find the best configuration for your specific task. Here are some common hyperparameters to consider:
+
+### Learning Rate
+
+The learning rate determines how much the model adjusts its internal parameters after each batch of data. Think of it as the size of the steps it takes towards a solution. If the learning rate is too high, the model might "overshoot" the optimal solution and become unstable. If it's too low, training can be incredibly slow, or the model might get stuck in a suboptimal state. A common strategy is to start with a default value (e.g., 1e-4) and adjust it by factors of 10 (e.g., 1e-3 or 1e-5) to see how it affects performance.
+
+### Number of Epochs or Steps
+
+An epoch is one full pass through the entire training dataset. The number of epochs determines how many times the model gets to see the data. Too few epochs can lead to *underfitting*, where the model hasn't learned the patterns in the data. Too many epochs can cause *overfitting*, where the model memorizes the training data perfectly but fails to generalize to new, unseen situations. 
+
+**Start training with a small number of epochs (eg: 1 or 2),** and then progressively scale up. 
+
+<Note>To train your models for longer, consider using [phospho pro](https://app.phospho.ai) to unlock longer training times.</Note>
+
+
+# What's next?
+
+AI robotics is the most complex and exciting field in robotics research. Keep in mind that many of the demos you see online are usually carefully staged, edited, and cherry-picked to show the best results. Sometimes, they are even pre-recorded. They are also the result of countless hours of work, trial and error, and iteration. So don't be discouraged if your first attempts don't go as planned! Keep improving and sharing your progress with the community.
+
+
+<CardGroup>
+  <Card
+    title="Datasets"
+    icon="database"
+    iconType="regular"
+    href="/basic-usage/dataset-recording"
+  >
+    Record datasets
+  </Card>
+  <Card
+    title="AI Training"
+    icon="brain-circuit"
+    iconType="regular"
+    href="/basic-usage/training"
+  >
+    Train your first AI model
+  </Card>
+  <Card
+    title="Discord"
+    icon="discord"
+    iconType="regular"
+    href="https://discord.gg/cbkggY6NSK"
+  >
+    Join the Discord to ask questions, get help from others, and get updates.
+  </Card>
+</CardGroup>
+
+
+
+
+

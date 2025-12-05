@@ -1,0 +1,103 @@
+---
+title: "VR Control with a Meta Quest"
+description: "How to control your robot arm using a Meta Quest 2, Pro, 3, 3s over a local WiFi network"
+---
+
+import InstallCode from '/snippets/install-code.mdx';
+import GetMQApp from '/snippets/get-mq-app.mdx';
+import TeleopInstructions from '/snippets/teleop-instructions.mdx';
+
+
+
+Control your robot arm using a Meta Quest 2, Pro, 3, or 3s. VR control makes bimanual control more intuitive and lets you collect data faster.
+
+<GetMQApp/>
+
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/AQ-xgCTdj_w?si=NDTtX1nISABjzmbA" 
+    title="VR Control tutorial" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+
+## Prerequisites
+
+1. You need a robot arm such as the SO-100, the SO-101, or [other compatible hardware](https://github.com/phospho-app/phosphobot). Get the [phosphot starter pack here](https://robots.phospho.ai).
+2. Install [the phosphobot software](/installation) on your computer.
+
+<InstallCode/>
+
+3. Connect robots to your computer. Start the phosphobot server.
+
+  ```bash
+  phosphobot run
+  ```
+
+4. Complete the [quickstart](/so-100/quickstart) and check that you can [control your robot](/basic-usage/teleop).
+5. The **[phosphobot teleoperation app](/examples/teleop)** is installed on your **Meta Quest 2, Pro, 3 or 3s**. >
+
+<GetMQApp/>
+
+## How to control your robot arm with the Meta Quest app? Step by step instructions
+
+<TeleopInstructions/>
+
+## Examples of VR control
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/j73ixL-oQaQ?si=WdI6jKNAnjlY9yUI" 
+    title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+The phospho Meta Quest app lets you operate the robot arm in real time. With the built-in stereo camera system, you can see the robot's environment in 3D, allowing you to interact as if you were physically present. 
+
+<iframe
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/e_gu-HebhfY"
+    title="YouTube video player"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen>
+</iframe>
+
+<iframe
+    className="w-full aspect-video"
+     src="https://www.youtube.com/embed/bh9wrvvMJtI?si=bTon9xLhNJOuyyao"
+    title="SO100 arts and craft"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen>
+</iframe>
+
+
+
+## What's next?
+
+Use your **recorded datasets** to **train AI models**.
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/Mk3EF8J1BGg?si=6GL1jVd0TqtngW1P" 
+    title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+
+<Card
+  title="Train your first AI model"
+  icon="robot"
+  iconType="regular"
+  href="/learn/ai-models">
+    Follow this guide to teleoperate the robot arm and train your first AI model.
+</Card>
+
+
+
+
+
+

@@ -1,0 +1,343 @@
+---
+title: "Train SmolVLA"
+description: "How to Train and Run SmolVLA with LeRobot: A Step-by-Step Guide"
+---
+
+In this tutorial, we will walk you through the process of fine-tuning a SmolVLA model and deploying it on a real robot arm. We will cover environment setup, training, inference, and common troubleshooting issues.
+
+<Warning>
+This tutorial is for LeRobot by Hugging Face, which is different than phosphobot. It's geared towards more advanced users with a good understanding of Python and machine learning concepts. If you're new to robotics or AI, we recommend starting with the [phosphobot documentation](https://docs.phospho.ai/).
+</Warning>
+
+<Note> 
+**This tutorial may be outdated**
+
+The [LeRobot](https://github.com/huggingface/lerobot) library is under active development, and the codebase changes frequently. While this tutorial is accurate as of June 11, 2025, some steps or code fixes may become obsolete. Always refer to the official LeRobot documentation for the most up-to-date information.
+</Note>
+
+
+## What is LeRobot by Hugging Face?
+
+![LeRobot logo](https://cdn-uploads.huggingface.co/production/uploads/631ce4b244503b72277fc89f/MNkMdnJqyPvOAEg20Mafg.png)
+
+LeRobot is a platform designed to make real-world robotics more accessible for everyone. It provides pre-trained models, datasets, and tools in PyTorch.
+
+It focuses on state-of-the-art approaches in **imitation learning** and **reinforcement learning**.
+
+With LeRobot, you get access to:
+
+- Pretrained models for robotics applications
+- Human-collected demonstration datasets
+- Simulated environments to test and refine AI models
+
+Useful links:
+
+- [LeRobot on GitHub](https://github.com/huggingface/lerobot)
+- [LeRobot on Hugging Face](https://huggingface.co/lerobot)
+- [AI models for robotics](https://huggingface.co/models?pipeline_tag=robotics&sort=trending)
+
+### Introduction to SmolVLA
+
+SmolVLA is a 450M parameter, open-source Vision-Language-Action (VLA) model from Hugging Face's LeRobot team. It's designed to run efficiently on consumer hardware by using several clever tricks, such as skipping layers in its Vision-Language Model (VLM) backbone and using asynchronous inference to compute the next action while the current one is still executing.
+
+- [arxiv paper](https://arxiv.org/abs/2506.01844)
+- [blog post](https://huggingface.co/blog/smolvla)
+- [model card](https://huggingface.co/lerobot/smolvla_base)
+
+### Part 1: Training the SmolVLA Model with LeRobot by Hugging Face
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/5g-DXBp_CQc?si=InPfw-YS31eqQJty"
+    title="Train SmolVLA" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+#### 1.1 Environment Setup for LeRobot by Hugging Face
+
+Setting up a clean Python environment is crucial to avoid dependency conflicts. We recommend [using `uv`, a fast and modern Python package manager.](https://docs.astral.sh/uv/getting-started/installation/)
+
+1.  **Install `uv`:**
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+
+2.  **Clone the LeRobot Repository:**
+    ```bash
+    git clone https://github.com/huggingface/lerobot.git
+    cd lerobot
+    ```
+    > **💡 Pro Tip:** Before you start, run `git pull` inside the `lerobot` directory to make sure you have the latest version of the library. 
+
+3.  **Create a Virtual Environment and Install Dependencies:**
+    This tutorial uses Python 3.10.
+
+    ```bash
+    # Create and activate a virtual environment
+    uv venv
+    source .venv/bin/activate
+    
+    # Install SmolVLA and its dependencies
+    uv pip install -e ".[feetech,smolvla]"
+    ```
+
+#### 1.2 Training on a GPU-enabled Machine with LeRobot by Hugging Face
+
+Training a VLA model is computationally intensive and requires a powerful GPU. This example uses an Azure Virtual Machine with an NVIDIA A100 GPU, but any modern NVIDIA GPU with sufficient VRAM should work.
+
+> **Note on MacBook Pro:** While it's technically possible to train on a MacBook Pro with an M-series chip (using the `mps` device), it is extremely slow and not recommended for serious training runs.
+
+1.  **The Training Command:**
+    We will fine-tune the base SmolVLA model on a "pick and place" dataset from the Hugging Face Hub.
+
+    ```bash
+    # We recommend using tmux to run the training session in the background
+    tmux
+
+    # Start the training
+    uv run lerobot/scripts/train.py \
+    --policy.path=lerobot/smolvla_base \
+    --dataset.repo_id=PLB/phospho-playground-mono \
+    --batch_size=256 \
+    --steps=30000 \
+    --wandb.enable=true \
+    --save_freq=5000 \
+    --wandb.project=smolvla
+    ```
+    *   `--save_freq`: Saves a model checkpoint every 5000 steps, which is useful for not losing your work.
+    > **Note on WandB:** As of June 11, 2025, Weights & Biases logging (`wandb`) may have issues in the current version of LeRobot. If you encounter errors, you can disable it by changing the flag to `--wandb.enable=false`.
+
+2. **Fixing config.json** You need to change `n_action_steps` in the `config.json` file. The default value is set to 1, but for inference on SmolVLA, it should be set to 50. This is only used during inference, but it's easier to fix it now rather than later (before uploading the model to the Hugging Face Hub).
+
+    *   **Locate the config.json file:** It will be in the `lerobot/smolvla_base` directory.
+    *   **Edit the file:** Open it in a text editor and change the line:
+        ```json
+        "n_action_steps": 1,
+        ```
+        to
+        ```json
+        "n_action_steps": 50,
+        ```
+
+    > **Note:** If you don't change this, the inference will be very slow, as the model will only predict one action at a time instead of a sequence of actions.
+
+3.  **Uploading the Model to the Hub:**
+    Once training is complete, you'll need to upload your fine-tuned model to the Hugging Face Hub to use it for inference.
+
+    *   **Login to your Hugging Face account:**
+        ```bash
+        huggingface-cli login
+        ```
+    *   **Upload your model checkpoint:** The trained model files will be in a directory like `outputs/train/YYYY-MM-DD_HH-MM-SS/`.
+        ```bash
+        # Replace with your HF username, desired model name, and the actual output path
+        huggingface-cli upload your-hf-username/your-model-name outputs/train/2025-06-04_18-21-25/checkpoints/last/pretrained_model pretrained_model
+        ```
+
+
+### Part 2: Training on Google Colab with LeRobot by Hugging Face
+
+Running inference is often done on a different machine. Google Colab is a popular choice, but it comes with its own set of challenges.
+
+1.  **Initial Setup on Colab:**
+    Start by cloning the repository.
+    ```python
+    # Use --depth 1 for a faster, shallow clone
+    !git clone --depth 1 https://github.com/huggingface/lerobot.git
+    %cd lerobot
+    !pip install -e ".[smolvla]"
+    ```
+2.  **Fixing the `torchcodec` Error:**
+    You will likely encounter a `RuntimeError: Could not load libtorchcodec`. This is because the default PyTorch version in Colab is incompatible with the `torchcodec` version required by LeRobot.
+
+    **The fix is to downgrade `torchcodec`:**
+    ```python
+    !pip install torchcodec==0.2.1
+    ```
+    After running this, you must **restart the Colab runtime** for the change to take effect.
+
+3.  **Avoiding Rate Limits:**
+    Colab instances share IP addresses, which can lead to getting rate-limited by the Hugging Face Hub when downloading large datasets. If you see `HTTP Error 429: Too Many Requests`, you have two options:
+    *   **Wait:** The client will automatically retry with an exponential backoff.
+    *   **Use a Local Dataset:** Download the dataset to your Google Drive, mount the drive in Colab, and point the script to the local path instead of the `repo_id`.
+
+
+### Part 3: LeRobot training Advanced Troubleshooting & Code Fixes 
+
+Here are some other common issues you might face and how to solve them.
+
+#### Issue: `ffmpeg` or `libtorchcodec` Errors on macOS
+*   **Problem:** On macOS, you might encounter `RuntimeError`s related to `ffmpeg` or shared libraries not being found, even if they are installed. This is often a dynamic library path issue.
+*   **Fix:** Explicitly set the `DYLD_LIBRARY_PATH` environment variable to include the path where Homebrew installs libraries.
+    ```bash
+    # Add this to your ~/.zshrc or ~/.bashrc file for a permanent fix
+    export DYLD_LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib:$DYLD_LIBRARY_PATH"
+    ```
+
+#### Issue: `ImportError: cannot import name 'GradScaler'`
+*   **Problem:** This error occurs if your PyTorch version is too old. SmolVLA requires `torch>=2.3.0`.
+*   **Fix:** Upgrade PyTorch in your `uv` environment.
+    ```bash
+    uv pip install --upgrade torch
+    ```
+
+### Part 4: Running Inference on a Real SO-100 or SO-101 Robot with LeRobot by Hugging Face
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/00A6j02v450?si=hWCPJK3-staDb52t"
+    title="Run SmolVLA inference" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+The LeRobot library is integrated with the SO-100 and SO-101 robots, allowing you to run inference directly on these devices. This section will guide you through the hardware setup, calibration, and running the inference script with LeRobot. 
+
+<Warning>
+You can use the [robots from our dev kit](https://robots.phospho.ai) for this step. However, the LeRobot setup is different and completly independent from phosphobot. Be careful and do not mix the two setups.
+</Warning>
+
+#### 2.1 LeRobot Hardware Setup and Calibration
+
+1.  **Hardware Connections:**
+    *   Connect both your **leader arm** and **follower arm** to your computer via USB.
+    *   Connect your cameras (context camera and wrist camera).
+
+2.  **Finding Robot Ports:**
+    Run this script to identify the USB ports for each arm.
+    ```bash
+    uv run lerobot/scripts/find_motors_bus_port.py
+    ```
+    Note the port paths (e.g., `/dev/tty.usbmodemXXXXXXXX`).
+
+3.  **Calibrating the Arms:**
+    The calibration process saves a file with the min/max range for each joint.
+    *   **Follower Arm:**
+        ```bash
+        uv run python -m lerobot.calibrate --robot-type=so100_follower --robot-port=/dev/tty.usbmodemXXXXXXXX --robot-id=follower_arm
+        ```
+    *   **Leader Arm:**
+        ```bash
+        uv run python -m lerobot.calibrate --robot-type=so100_leader --robot-port=/dev/tty.usbmodemYYYYYYYY --robot-id=leader_arm
+        ```
+
+4.  **Test Calibration with Teleoperation:**
+    Before running the AI, verify that the calibration works by teleoperating the robot. This lets you control the follower arm with the leader arm.
+
+    ```bash
+    uv run python -m lerobot.teleoperate \
+    --robot-type=so100_follower \
+    --robot-port=/dev/tty.usbmodemXXXXXXXX \
+    --robot-id=follower_arm \
+    --teleop-type=so100_leader \
+    --teleop-port=/dev/tty.usbmodemYYYYYYYY \
+    --teleop-id=leader_arm
+    ```
+    If the follower arm correctly mimics the movements of the leader arm, your calibration is successful.
+
+5.  **Finding Camera Indices:**
+    Run this script to list all connected cameras and their indices.
+    ```bash
+    uv run lerobot/scripts/find_cameras.py opencv
+    ```
+    Identify the indices for your context and wrist cameras.
+
+#### 2.2 Running the LeRobot Inference Script
+
+This is the main command to make the robot move.
+
+```bash
+uv run python -m lerobot.record \
+--robot-type=so100_follower \
+--robot-port=/dev/tty.usbmodemXXXXXXXX \
+--robot-cameras="{ 'images0': {'type': 'opencv', 'index_or_path': 1, 'width': 320, 'height': 240, 'fps': 30}, 'images1': {'type': 'opencv', 'index_or_path': 2, 'width': 320, 'height': 240, 'fps': 30}}" \
+--robot-id=follower_arm \
+--teleop-type=so100_leader \
+--teleop-port=/dev/tty.usbmodemYYYYYYYY \
+--teleop-id=leader_arm \
+--display-data=false \
+--dataset-repo-id=your-hf-username/eval_so100 \
+--dataset-single-task="Put the green lego brick in the box" \
+--policy-path=oulianov/smolvla-lego
+```
+*   `--policy-path`: Note that this time we do not add the `/pretrained_model` subfolder. We will fix this in the code.
+
+### Part 5: LeRobot Troubleshooting and Code Fixes
+
+#### Issue 1: Unit Mismatch (Radians vs. Degrees)
+*   **Problem:** The SmolVLA model outputs actions in the same units as its training data. Some datasets use radians. For example, the datasets recorder with phosphobot such as `PLB/phospho-playground-mono` uses radians. However, the LeRobot SO-100 driver expects actions in degrees. This will cause the robot to move erratically or barely at all.
+*   **Fix:** Convert the model's output from radians to degrees.
+
+    *   **File:** `lerobot/common/policies/smolvla/modeling_smolvla.py`
+    *   **Location:** In the `select_action` method.
+    *   **Code:** Add the following lines just after the `# Unpad actions` section.
+        ```python
+        # # # START HACK # # #
+        # Convert from radians to degrees
+        actions = actions * 180.0 / math.pi
+        # # # END HACK # # #
+        ```
+
+#### Issue 2: Flimsy Leader Arm Connection
+*   **Problem:** The leader arm can sometimes have an unstable connection, causing the calibration or teleoperation script to crash if it fails to read a motor position.
+*   **Fix:** Add a `try-except` block to gracefully handle connection errors.
+    *   **File:** `lerobot/common/robot/motors_bus.py`
+    *   **Location:** In the `record_ranges_of_motion` method.
+    *   **Code:** Wrap the `while True:` loop in a `try-except` block.
+        ```python
+        # In the record_ranges_of_motion method
+        while True:
+            try: # <-- ADD THIS LINE
+                positions = self.sync_read("Present_Position", motors, normalize=False)
+                mins = {m: min(mins[m], positions[m]) for m in motors}
+                maxs = {m: max(maxs[m], positions[m]) for m in motors}
+                if display_values:
+                    # print motor positions
+                    ...
+                if user_pressed_enter:
+                    break
+            except Exception as e: # <-- ADD THIS LINE
+                logger.error(f"Error reading positions: {e}") # <-- ADD THIS LINE
+                continue # <-- ADD THIS LINE
+        ```
+
+#### Issue 3: `config.json` or `model.safetensors` Not Found
+*   **Problem:** When running inference, the script may fail with `FileNotFoundError: config.json not found on the HuggingFace Hub` because it doesn't look inside the `pretrained_model` subfolder by default.
+*   **Fix:** Modify the `from_pretrained` method to include the subfolder when downloading files.
+    *   **File:** `lerobot/common/policies/pretrained.py`
+    *   **Location:** In the `from_pretrained` class method.
+    *   **Code:** Add the `subfolder` argument to both `hf_hub_download` calls.
+    ```python
+    # In the from_pretrained method
+    try:
+        # Download the config file and instantiate the policy.
+        config_file = hf_hub_download(
+            repo_id=model_id,
+            filename=CONFIG_NAME,
+            revision=revision,
+            cache_dir=cache_dir,
+            force_download=force_download,
+            proxies=proxies,
+            resume_download=resume_download,
+            token=token,
+            local_files_only=local_files_only,
+            subfolder="pretrained_model", # <-- ADD THIS LINE
+        )
+        # ...
+    # ...
+    try:
+        # Download the model file.
+        model_file = hf_hub_download(
+            repo_id=model_id,
+            filename=SAFETENSORS_SINGLE_FILE,
+            revision=revision,
+            cache_dir=cache_dir,
+            force_download=force_download,
+            proxies=proxies,
+            resume_download=resume_download,
+            token=token,
+            local_files_only=local_files_only,
+            subfolder="pretrained_model", # <-- ADD THIS LINE
+        )
+    ```

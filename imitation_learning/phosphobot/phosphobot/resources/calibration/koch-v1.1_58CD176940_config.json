@@ -1,0 +1,17 @@
+{
+  "name": "koch-v1.1",
+  "servos_voltage": 6.0,
+  "servos_offsets": [2081.0, 1905.0, 2112.0, 2075.0, 2048.0, 2013.0],
+  "servos_calibration_position": [
+    3064.0, 3012.0, 995.0, 1962.0, 2958.0, 3258.0
+  ],
+  "servos_offsets_signs": [1.0, -1.0, -1.0, 1.0, -1.0, -1.0],
+  "pid_gains": [
+    { "p_gain": 300, "i_gain": 200, "d_gain": 5000 },
+    { "p_gain": 500, "i_gain": 300, "d_gain": 3000 },
+    { "p_gain": 1000, "i_gain": 500, "d_gain": 3000 },
+    { "p_gain": 800, "i_gain": 0, "d_gain": 600 },
+    { "p_gain": 1000, "i_gain": 0, "d_gain": 600 },
+    { "p_gain": 700, "i_gain": 0, "d_gain": 500 }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "metadata": {
+    "og:site_name": "docs.phospho.ai",
+    "og:title": "phospho starter pack documentation",
+    "og:description": "The toolkit for AI robotics",
+    "og:url": "https://docs.phospho.ai",
+    "og:image": "/logo/light.svg",
+    "og:logo": "/logo/logo.svg",
+    "twitter:title": "phospho starter pack documentation",
+    "twitter:description": "The toolkit for AI robotics",
+    "twitter:url": "https://docs.phospho.ai",
+    "twitter:image": "/logo/light.svg",
+    "twitter:site": "@phospho_ai"
+  },
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "phospho",
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#00FF00",
+    "light": "#00FF00",
+    "dark": "#1E1E1E",
+    "anchors": {
+      "from": "#00FF00",
+      "to": "#07C983"
+    }
+  },
+  "modeToggle": {
+    "default": "dark",
+    "isHidden": true
+  },
+  "topbarLinks": [
+    {
+      "name": "Contact us",
+      "url": "mailto:contact@phospho.ai"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get hardware",
+    "url": "https://robots.phospho.ai?utm_source=docs"
+  },
+  "tabs": [
+    {
+      "name": "phospho pro",
+      "url": "https://phospho.ai/pro?utm_source=docs"
+    },
+    {
+      "name": "Github",
+      "url": "https://github.com/phospho-app/phosphobot"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["welcome", "installation"]
+    },
+    {
+      "group": "phosphobot Basic Usage",
+      "pages": [
+        "basic-usage/teleop",
+        "basic-usage/dataset-recording",
+        "basic-usage/dataset-operations",
+        "basic-usage/training",
+        "basic-usage/inference",
+        "examples/teleop"
+      ]
+    },
+    {
+      "group": "Learn about AI and robotics",
+      "pages": [
+        "learn/overview",
+        "learn/kinematics",
+        "learn/lerobot-dataset",
+        "learn/improve-robotics-ai-model",
+        "learn/ai-models",
+        "learn/train-smolvla",
+        "learn/policies",
+        "learn/gravity-compensation",
+        "learn/cameras"
+      ]
+    },
+    {
+      "group": "Hardware",
+      "pages": [
+        "unboxings/dk2",
+        "so-101/quickstart",
+        "so-100/quickstart",
+        "unboxings/dk1"
+      ]
+    },
+
+    {
+      "group": "API Reference",
+      "pages": [
+        {
+          "group": "Control",
+          "icon": "robot",
+          "pages": [
+            "control/calibration-sequence",
+            "control/move-init",
+            "control/move-teleoperation",
+            "control/move-teleoperation-ws",
+            "control/move-absolute-position",
+            "control/move-relative-position",
+            "control/move-leader-start",
+            "control/move-leader-stop",
+            "control/end-effector-state",
+            "control/read-torques",
+            "control/turn-torque",
+            "control/read-joints",
+            "control/write-joints",
+            "control/read-temperature",
+            "control/write-temperature"
+          ]
+        },
+        {
+          "group": "Recording",
+          "icon": "database",
+          "pages": [
+            "recording/start-recording-episode",
+            "recording/stop-recording-episode",
+            "recording/play-recording"
+          ]
+        },
+        {
+          "group": "AI model",
+          "icon": "brain",
+          "pages": [
+            "ai-training/start-training",
+            "ai-training/cancel-training",
+            "ai-training/ai-control-start",
+            "ai-training/ai-control-stop"
+          ]
+        },
+        {
+          "group": "Camera",
+          "icon": "camera",
+          "pages": [
+            "camera/video-feed-for-camera",
+            "camera/frames",
+            "camera/cameras-refresh"
+          ]
+        }
+      ]
+    },
+
+    {
+      "group": "Examples",
+      "pages": [
+        "examples/control",
+        "examples/vision",
+        "examples/teleop-from-anywhere",
+        "examples/mcp-for-robotics"
+      ]
+    },
+    {
+      "group": "Other",
+      "pages": ["faq"]
+    }
+  ],
+  "footerSocials": {
+    "twitter": "https://twitter.com/phospho_ai",
+    "github": "https://github.com/phospho-app/phosphobot",
+    "youtube": "https://www.youtube.com/@phospho_ai",
+    "website": "https://robots.phospho.ai?utm_source=docs",
+    "linkedin": "https://www.linkedin.com/company/phospho-app/",
+    "discord": "https://discord.gg/cbkggY6NSK"
+  },
+  "openapi": "openapi.yml",
+  "analytics": {
+    "posthog": {
+      "apiKey": "phc_EesFKS4CVoyc0URzJN0FOETpg7KipCBEpRvHEvv5mDF",
+      "apiHost": "https://app.posthog.com"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "raiseIssue": true
+  }
+}

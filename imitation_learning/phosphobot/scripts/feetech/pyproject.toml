@@ -1,0 +1,13 @@
+[project]
+name = "feetech"
+version = "0.1.0"
+description = "Utlity scripts to work with Feetech servos"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "feetech-servo-sdk>=1.0.0",
+    "loguru>=0.7.3",
+    "numpy>=2.2.6",
+    "pyserial>=3.5",
+    "tqdm>=4.67.1",
+]

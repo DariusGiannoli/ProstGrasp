@@ -1,0 +1,30 @@
+__pycache__
+my_port.txt
+.python-version
+.cache
+.pytest_cache
+
+# Build
+teleop.egg-info
+
+# Performance with PyInstrument
+profile.html
+
+# Compilation with Nuitka
+main.build
+main.dist
+main.onefile-build
+main.bin
+main.app
+main.exe
+main.zip
+main
+# Compilation with pyinstaller
+*.spec
+
+# Secrets
+secrets.toml
+resources/tokens.prod.toml
+resources/tokens.dev.toml
+
+.claude

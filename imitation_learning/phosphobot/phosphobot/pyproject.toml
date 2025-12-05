@@ -1,0 +1,107 @@
+[project]
+name = "phosphobot"
+version = "0.3.134"
+description = "The AI-ready robotics dev kit, with built-in remote control and VLA support."
+authors = [{ name = "phospho", email = "contact@phospho.ai" }]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "dynamixel-sdk>=3.7.31",
+    "fastapi[standard]>=0.115.5",
+    "loguru>=0.7.2",
+    "rich>=14.0.0",
+    "matplotlib>=3.9.3",
+    "numpy>=1.26.4",
+    "pybullet>=3.2.7",
+    "pydantic>=2.10.2",
+    "pydantic_core==2.41.1", # To fix ci/cd for now
+    "scipy>=1.13.0",
+    "uvicorn>=0.32.1",
+    "opencv-python-headless>=4.0",
+    "requests>=2.32.4",
+    "types-requests>=2.32.0.20241016",
+    "json-numpy>=2.1.0",
+    "pandas>=2.2",
+    "tqdm>=4.67.1",
+    "feetech-servo-sdk>=1.0.0",
+    "typer>=0.16.0",
+    "websockets>=14.1",
+    "huggingface-hub>=0.28.0",
+    "datasets>=3.2.0",
+    "sentry-sdk[fastapi]>=2.20.0",
+    "posthog>=6.0.0",
+    "piper-sdk>=0.4.2",
+    "supabase>=2.18.1",
+    "toml>=0.10.2",
+    "av>=12.0.0",
+    "tyro>=0.9.20",
+    "types-toml>=0.10.8.20240310",
+    "pyrealsense2>=2.54; platform_system == 'Linux'",
+    "pyrealsense2>=2.54; platform_system == 'Windows'",
+    "pyrealsense2-macosx>=2.54; platform_system == 'Darwin'",
+    "fastparquet>=2024.11.0",
+    "httpx[socks]>=0.28.1",
+    "go2-webrtc-connect>=0.2.1",
+    "scapy>=2.6.1",
+    "netifaces-plus>=0.12.0",
+    "wasmtime>=33.0.0",
+    "async-property>=0.2.2",
+    "pyzmq>=27.0.2",
+    "textual>=6.1.0",
+    "msgpack>=1.0.5",
+]
+
+[dependency-groups]
+dev = [
+    "pyinstrument>=5.0.0",
+    "ruff>=0.8.1",
+    "mypy>=1.13.0",
+    "types-pyyaml>=6.0.12.20241230",
+    "types-requests>=2.32.0.20250306",
+    "pandas-stubs>=2.2.2.240807",
+    # "nuitka>=2.6",
+    "pyinstaller>=6.11.1",
+    "pytest>=8.3.4",
+    "pytest-xdist>=3.6.1",
+    "pytest-asyncio>=0.25.1",
+    "pytest-dependency>=0.6.0",
+    "types-python-dateutil>=2.9.0.20250516",
+    "textual-dev>=1.7.0",
+]
+rerun = ["rerun-sdk>=0.23.0"]
+
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.uv.sources]
+# Troubleshooting: on MacOS Silicon, you may need to compile pybullet from source.
+# If so, follow the guide in the README.md file and uncomment the line below.
+pybullet = { path = "../bullet3", editable = true }
+
+# For Unitree Go2, you may install the Go2 WebRTC Connect package from source.
+# go2-webrtc-connect = { path = "../../go2_webrtc_connect", editable = true }
+
+
+[project.scripts]
+phosphobot = "phosphobot.main:cli"
+
+[build-system]
+requires = ["setuptools>=42", "wheel", "toml"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.setuptools]
+# include data files as listed in MANIFEST.in
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+
+[tool.ruff]
+src = ["app"]
+
+[tool.mypy]
+exclude = ["build", "dist", "hooks", "resources", "tests"]

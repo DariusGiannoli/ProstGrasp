@@ -1,0 +1,123 @@
+---
+title: "Welcome to phosphobot"
+description: "An absurdly simple way to train AI models for real-world robots, built for ML engineers."
+---
+
+import InstallCode from '/snippets/install-code.mdx';
+import GetMQApp from '/snippets/get-mq-app.mdx';
+
+Phospho is how ML engineers make real robots intelligent. 
+We provide the hardware, libraries, and remote control capabilities so developers can collect data, 
+train AI models and deploy applications to real robots in minutes instead of months.
+
+# Highlights
+
+- 🕹️ Control your robots to record datasets in minutes with a keyboard, a gamepad, a leader arm, and more
+- ⚡ Train Action models such as ACT, π0 or gr00t-n1.5 with one click
+- 🦾 Compatible with the SO-100, SO-101, Unitree Go2, Agilex Piper...
+- 🚪 Dev-friendly API
+- 🤗 Fully compatible with LeRobot and HuggingFace
+- 🖥️ Runs on macOS, Linux and Windows
+- 🥽 Meta Quest app for teleoperation
+- 📸 Supports most cameras (classic, depth, stereo)
+- 🔌 Open Source: [Extend it with your own robots and cameras](https://github.com/phospho-app/phosphobot/tree/main/phosphobot)
+
+<Tip>Pssst... working with phosphobot? Get expert help from the team. Contact us at [contact@phospho.ai](mailto:contact@phospho.ai)</Tip>
+
+
+# Installation
+
+In a terminal, run the following command:
+
+<InstallCode/ >
+
+Then, fire up the the server:
+
+```bash 
+phosphobot run
+```
+
+It can take up to 15 seconds for the server to start.
+
+Go to `localhost` in your web browser to access the phosphobot dashboard. Go to **Keyboard Control** to control your robot using only your keyboard, record datasets, and train AI models!
+
+# VR Control
+
+phosphobot enables you to [control your robot arm in VR](./examples/teleop.mdx) using a Meta Quest 2, Pro, 3 or 3s. Speed up your data collection and unlock intuitive bimanual control.
+
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/AQ-xgCTdj_w?si=NDTtX1nISABjzmbA" 
+    title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+<GetMQApp/>
+
+
+# How to update phosphobot?
+
+[We're shipping updates daily](https://github.com/phospho-app/phosphobot/releases). We fix bugs, add features, and improve the experience constantly.
+
+Keep your software up-to-date to benefit from the latest improvements.
+
+<CodeGroup>
+
+```bash macOS 
+brew update && brew upgrade phosphobot
+```
+
+```bash Linux
+sudo apt update && sudo apt install --only-upgrade phosphobot
+```
+
+```powershell Windows
+powershell -ExecutionPolicy ByPass -Command "irm https://raw.githubusercontent.com/phospho-app/phosphobot/main/install.ps1 | iex"
+```
+
+```uv (pip)
+uvx phosphobot@latest run
+```
+
+</CodeGroup>
+
+
+# Next step
+
+<CardGroup>
+
+<Card
+  title="Installation"
+  icon="download"
+  iconType="regular"
+  href="/installation"
+>
+  How to install phosphobot on your computer
+</Card>
+<Card
+  title="Starter Pack"
+  icon="vial"
+  iconType="regular"
+  href="/unboxings/dk2"
+>
+  How to get started with the **phospho starter pack**
+</Card>
+<Card
+  title="SO-100 and SO-101 quickstart"
+  icon="play"
+  iconType="regular"
+  href="/so-100/quickstart"
+>
+  How to set up your SO-100 or SO-101 robot arm
+</Card>
+<Card
+  title="Discord"
+  icon="discord"
+  iconType="regular"
+  href="https://discord.gg/cbkggY6NSK"
+>
+  Join the Discord to ask questions, chat with roboticists, and get updates about AI robotics
+</Card>
+</CardGroup>

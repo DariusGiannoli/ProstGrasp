@@ -1,0 +1,151 @@
+name: Run Pytest and API tests on phosphobot
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "phosphobot/**"
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+  contents: write
+
+env:
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+  BRANCH_NAME: ${{ github.ref_name }}
+  COMMIT_ID: ${{ github.sha }}
+
+jobs:
+  pytest_phosphobot_tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phosphobot/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "phosphobot/pyproject.toml"
+
+      - name: Set up Python
+        run: uv python pin 3.11 && uv python install
+
+      - name: Install the project
+        run: uv sync --dev
+
+      - name: Run Pytest tests
+        run: uv run pytest tests/phosphobot/ -n 5
+
+  api_tests:
+    runs-on: ubuntu-latest
+    needs: pytest_phosphobot_tests
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install node
+        uses: actions/setup-node@v2
+        with:
+          node-version: "23.5"
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+        with:
+          working-directory: dashboard
+
+      - name: Build dashboard frontend
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: make build_frontend
+
+      - name: Check that the frontend build was successful (dist folder not empty)
+        run: |
+          if [ ! -d "phosphobot/resources/dist" ]; then
+            echo "Dashboard frontend build failed: dist folder not found"
+            exit 1
+          fi
+          if [ ! "$(ls -A phosphobot/resources/dist)" ]; then
+            echo "Dashboard frontend build failed: dist folder is empty"
+            exit 1
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "phosphobot/pyproject.toml"
+
+      - name: Set up Python
+        run: |
+          cd phosphobot
+          uv python pin 3.11
+          uv python install
+
+      - name: Display the current directory
+        run: pwd
+
+      - name: Install the project with lerobot
+        run: |
+          cd phosphobot
+          uv sync --all-groups
+
+      - name: Display the current directory
+        run: pwd
+
+      - name: Start server and simulation
+        run: make test_server > server.log 2>&1
+
+      - name: Wait for server
+        run: |
+          for i in {1..45}; do
+            if curl -s http://localhost:8080/status; then
+              echo "Server ready! in $i seconds" >> server.log
+              echo "Server ready! in $i seconds"
+              break
+            else
+              echo "Waiting for server..." >> server.log
+              echo "Waiting for server..."
+              sleep 1
+            fi
+          done
+
+      - name: Run integration tests and capture logs
+        run: |
+          cd phosphobot
+          uv run pytest -s -v tests/api/ 2>&1 | tee tests.log
+        continue-on-error: true
+
+      - name: Summarize test results to Markdown
+        run: |
+          cd phosphobot
+          uv run python tests/api/summarize.py tests.log summary.md
+        continue-on-error: true
+
+      - name: Display integration test logs
+        run: |
+          echo "Integration test logs:"
+          cat phosphobot/tests.log
+
+      - name: Display server logs
+        run: |
+          echo "Server logs:"
+          cat server.log
+
+      - name: Read test summary
+        id: read_test_summary
+        shell: bash
+        run: cat phosphobot/summary.md
+
+      - name: Create comment from markdown file
+        uses: GrantBirki/comment@v2.1.0
+        with:
+          file: phosphobot/summary.md
+
+      - name: Stop server
+        run: make stop

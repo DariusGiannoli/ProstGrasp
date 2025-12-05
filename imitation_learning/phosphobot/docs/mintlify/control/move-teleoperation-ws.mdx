@@ -1,0 +1,80 @@
+---
+icon: "socks" 
+title: "Teleoperation Control (WebSocket)" 
+description: "High frequency control of the robot arm via WebSocket connection for real-time updates and commands."
+---
+
+<Card
+    title="WebSocket URL"
+>
+```
+  ws://localhost/move/teleop/ws
+```
+</Card> 
+
+<ResponseExample>
+```json
+{
+  "nb_actions_received": 5,
+  "is_object_gripped": false,
+  "is_object_gripped_source": "left" // or "right"
+}
+```
+</ResponseExample>
+
+
+## Overview
+
+This WebSocket endpoint allows real-time teleoperation of a robot arm. The connection enables high-frequency command and status updates to ensure precise control and immediate feedback.
+
+## Data Flow
+
+**Incoming Data**: The client sends JSON-formatted control data for the robot's movement.  
+**Outgoing Data**: The server sends JSON-formatted status updates, including the number of actions received and the current gripped status of the object.
+
+
+## Control Data
+
+The client sends control data in JSON format, which includes the following fields:
+
+
+```json
+{
+  "x": 0.5,
+  "y": 1.2,
+  "z": -0.7,
+  "rx": 45.0,
+  "ry": 30.0,
+  "rz": 90.0,
+  "open": 1,
+  "source": "left" // or "right"
+}
+```
+
+See the [Teleoperation control endpoint](/control/move-teleoperation) endpoint for more details on each field.
+
+## Status Updates
+
+Status updates are sent back to the client every second or when there is a change in the gripped status of the object.
+
+
+```json
+{
+  "nb_actions_received": 5,
+  "is_object_gripped": false,
+  "is_object_gripped_source": "left"
+}
+```
+
+
+
+## Error Handling
+
+If the received data cannot be decoded as JSON, an error message is sent back to the client:
+
+```json
+{
+  "error": "JSON decode error: <error details>"
+}
+```
+

@@ -1,0 +1,41 @@
+{
+  "pid_gains": [
+    {
+      "p_gain": 600.0,
+      "i_gain": 0.0,
+      "d_gain": 200.0
+    },
+    {
+      "p_gain": 600.0,
+      "i_gain": 0.0,
+      "d_gain": 200.0
+    },
+    {
+      "p_gain": 600.0,
+      "i_gain": 0.0,
+      "d_gain": 200.0
+    },
+    {
+      "p_gain": 450.0,
+      "i_gain": 0.0,
+      "d_gain": 200.0
+    },
+    {
+      "p_gain": 450.0,
+      "i_gain": 0.0,
+      "d_gain": 150.0
+    },
+    {
+      "p_gain": 450.0,
+      "i_gain": 0.0,
+      "d_gain": 150.0
+    },
+    {
+      "p_gain": 300.0,
+      "i_gain": 0.0,
+      "d_gain": 100.0
+    }
+  ],
+  "gripping_threshold": 1000,
+  "non_gripping_threshold": 200
+}

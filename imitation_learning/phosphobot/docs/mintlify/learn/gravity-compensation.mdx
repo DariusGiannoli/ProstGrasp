@@ -1,0 +1,176 @@
+---
+title: "Gravity Compensation"
+description: "Understanding Gravity Compensation in Robotics"
+---
+
+
+## Introduction
+
+Gravity compensation is a fundamental technique in robotics that **allows a robot arm to be freely moved by hand** while maintaining its position when released. This page will explain how you can create a simple gravity compensation algorithm for the SO-100 robot arm.
+
+You can enable gravity compensation in phosphobot by going to **Leader arm control** and clicking on the **Enable gravity compensation** button.
+
+<iframe
+  className="w-full aspect-video"
+  src="https://www.youtube.com/embed/BN3nXp0n7ec"
+  title="so100 gravity compensation"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+
+### How Gravity Compensation Works
+
+At its core, **gravity compensation counteracts the effect of gravity on a robot's joints**. Without compensation, a robot arm would fall due to gravity when the motors are not actively holding position. _With proper compensation, you can move the robot by hand, and it will stay in place when released._
+
+<Card icon="lightbulb" title="Core Concept" href="https://jasonjzliu.com/factr/">
+Gravity compensation enables intuitive physical interaction with robots without requiring motor power to maintain position.
+</Card>
+
+### The Physics Behind It
+
+The implementation uses the principle of inverse dynamics to calculate the torques needed to counteract gravity. Let's break down the key components:
+
+<Accordion title="Understanding Inverse Dynamics">
+
+#### Inverse Dynamics
+
+Inverse dynamics calculates the joint torques ($$\tau$$) required to achieve a desired motion, given the current positions, velocities, and accelerations of the joints. In our case, we use it to find the gravity torques ($$\tau_g$$​).
+
+The equation for **inverse dynamics** can be expressed as:
+$$
+\tau=M(q)\ddot{q} + C(q,\dot{q})\dot{q} + G(q)\tau
+$$
+
+Where:
+ 
+- **$$ M(q)$$** is the mass matrix
+
+- **$$C(q,\dot{q})$$** represents Coriolis and centrifugal forces
+
+- **$$G(q)$$** is the gravity vector
+
+- **$$q, \dot{q}, \ddot{q}$$** are joint positions, velocities, and accelerations respectively
+
+
+We want to solve for a specific case where the robot is at rest.
+When we set velocities and accelerations to zero, we get just the gravity term:
+τg=G(q)\tau_g = G(q)τg​=G(q)
+</Accordion>
+
+<Accordion title="Virtual Displacement Method">
+#### Virtual Displacement Method
+
+Our robot is an SO-100 with STS3215 motors, which don't natively support torque control. Instead, they use position control.
+
+To achieve **gravity compensation**, we need to simulate the effect of torque control using position control.
+
+Instead of directly applying the calculated torques (which would require torque control), we create small virtual displacements in the direction that would counteract gravity.
+
+For each joint, we calculate a **desired position** that's slightly offset from the current position:
+
+$$
+θ_{des}=θ_{current}+\alpha \cdot \tau_g\theta_{des}
+$$
+
+Where:
+- **$$θ_{des}$$** is the desired joint position
+
+- **$$θ_{current}$$** is the current joint position
+
+- **$$\alpha$$** is a scaling factor that determines how much the joint should move
+
+- **$$\tau_g$$** is the gravity torque for that joint
+
+
+</Accordion>
+
+## Implementation Details
+
+Let's examine key aspects needed to implement gravity compensation for the SO-100 robot arm.
+
+### PID Gains Adjustment
+
+To make the robot arm more compliant during gravity compensation, we adjust the PID gains of the motors. The default gains are optimized for position control, but we need **different gains** for gravity compensation.
+
+<Card icon="wrench" title="Tuning Note">
+These will depend on the motors you have, 6V or 12V.
+Play around with the values to find the best settings for your robot.
+</Card>
+
+These are lower than the default gains, making the robot **more responsive to external forces** while still maintaining enough stiffness to hold position against gravity.
+
+### The Control Loop
+
+The main gravity compensation loop needs to run at a high frequency to provide smooth motion. You should aim for at least 50 Hz to 100 Hz.
+
+Here's a simplified version of the loop:
+
+1. Read **current** joint positions
+2. **Update** the robot state in the physics simulator (Mujoco, Genesis, PyBullet, etc.)
+3. **Calculate gravity torques** using inverse dynamics
+4. Compute desired positions with the **virtual displacement formula**
+5. Send the new positions to the motors
+6. Repeat
+
+<CardGroup>
+
+<Card icon="code" title="Implementation Options">
+**Physics Simulators:**
+- Mujoco
+- Genesis
+- PyBullet
+</Card>
+
+<Card icon="graduation-cap" title="Learn more" href="https://mujoco.org/">
+Learn more about PyBullet for robot simulation
+</Card>
+</CardGroup>
+
+### The Alpha Parameter
+
+The alpha parameter is crucial for tuning the gravity compensation:
+
+This array controls _how much each joint responds to the calculated gravity torques_:
+
+- **Higher** values make the joint more responsive but potentially less stable
+
+- **Lower** values make the joint more stable but potentially less responsive
+
+Zero values mean **no compensation** for that joint
+
+The values are tuned for each joint based on its mass properties and mechanical characteristics.
+
+### Mathematical Analysis
+
+<Accordion title="Impedance Control Relationship">
+
+The virtual displacement method can be understood as a **form of impedance control**. In traditional impedance control, the relationship between force and position is:
+
+$$
+F= K(x_{des} - x) + B\dot{x}F
+$$
+
+Where:
+- **$$x_{des}$$** is the desired position
+- **$$x$$** is the current position
+- **$$K$$** is stiffness
+- **$$B$$** is damping
+
+Our approach inverts this relationship:
+$$
+x_{des}=x+K^{-1}Fx_{des}
+$$
+
+In our case:
+- F is the **gravity force**
+- $$K^{-1}$$ is represented by the $$\alpha$$ parameter.
+
+</Accordion>
+
+<Card icon="graduation-cap" title="Learn more" href="https://en.wikipedia.org/wiki/Inverse_dynamics">
+Learn more about Inverse Dynamics in robotics
+</Card>
+
+# Enjoy, and Happy Coding!

@@ -1,0 +1,16 @@
+---
+title: "Frequently Asked Questions"
+description: "Answers to common questions about phosphobot"
+---
+
+## Does phospho collect telemetry?
+
+Phospho uses telemetry to report anonymous usage and error information. As an open-source software, this type of information is important to improve and understand how the product is used. This is done using [PostHog](https://github.com/PostHog/posthog) and [Sentry](https://sentry.io/).
+
+## Why do we collect telemetry?
+
+Anonymous telemetry information enables us to continuously improve the product and detect recurring problems to better serve all users. We collect aggregated information about general usage and errors. We do NOT collect any information on users' data records, datasets, or metadata information. None of the data is shared with third parties. We want to be super transparent about this and you can find the exact data we collect by inspecting the code in the repo.
+
+## How to disable telemetry?
+
+You can opt-out by adding the flag `--no-telemetry` to the `uv run phosphobot run` command in the `Makefile`.

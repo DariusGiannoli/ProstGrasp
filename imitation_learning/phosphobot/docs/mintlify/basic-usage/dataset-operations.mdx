@@ -1,0 +1,80 @@
+---
+title: "Manipulate LeRobot datasets"
+description: "How to repair, merge, split and delete LeRobot datasets"
+---
+
+import InstallCode from '/snippets/install-code.mdx';
+
+You just recorded a LeRobot dataset with your robot. Maybe you also downloaded a dataset from the HuggingFace hub. With phospho, you can:
+
+- repair corrupted datasets
+- merge two datasets into one
+- split a dataset into multiple datasets (e.g. training/validation/test sets)
+- delete episodes from a dataset
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/YmkeyExM_vw?si=QwPbBGHL59jw_f8k"
+    title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+
+## Prerequisites 
+
+You need to install the phosphobot software on your computer. If you haven't done it yet, follow the [installation guide](/installation).
+
+<InstallCode/>
+
+
+For any of this operations, go to the dashboard and click on the `Browse Datasets` tab. Then move to the `lerobot_v2.1` folder.
+
+You will see all your local datasets. To download a dataset from the HuggingFace hub, click on the `Add from hub` button. It will be downloaded and added to your local datasets.
+
+## Repair a dataset
+
+Select a dataset and click on the `Repair Selected Dataset` button. This will check that your dataset is valid and fix common LeRobot issues.
+
+## Merge two datasets
+
+Select two datasets and click on the `Merge Selected Datasets` button. This will merge the two datasets into a single dataset.
+For now, you can only merge two local datasets at a time. If you need to merge more, you can do it recursively.
+
+## Split a dataset
+
+Select a dataset and click on the `Split Selected Dataset` button. This will split the dataset into two datasets.
+
+## Delete a dataset
+
+Select a dataset and click on the `Delete Selected Dataset` button. This will delete the dataset from your local datasets.
+
+## Upload the dataset back to HuggingFace
+
+Click the 3 dots on the right of the dataset and select `Push to Hugging Face Hub`. This will upload the dataset to your HuggingFace account.
+
+## Visualize your dataset
+
+Once your dataset is uploaded to HuggingFace, you can view it using the [LeRobot Dataset Visualizer](https://huggingface.co/spaces/lerobot/visualize_dataset). This will also check that your dataset is valid.
+
+![LeRobot dataset visualizer](/assets/lerobot_dataset_viz.png)
+
+<Note>
+  The dataset visualizer only works with the `AVC1` video codec. If you used
+  another codec, you may see black screens in the video preview. Preview
+  directly the videos files in a video player by opening your recording locally:
+  `~/phosphobot/recordings/lerobot_v2/DATASET_NAME/video`.
+</Note>
+
+Looking good? You're ready to train your AI model!
+
+# What's next
+
+<Card
+  title="Train an AI model"
+  icon="brain"
+  iconType="regular"
+  href="/basic-usage/training"
+>
+  How to train an AI model from a dataset you recorded
+</Card>

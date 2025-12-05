@@ -1,0 +1,8 @@
+ENV = "prod"
+# No crash telemetry if running from source
+# SENTRY_DSN = "https://75a41a69eb862ad6fbf0b4a660a81d4c@o4506399435325440.ingest.us.sentry.io/4508731898527744"
+POSTHOG_API_KEY = "phc_EesFKS4CVoyc0URzJN0FOETpg7KipCBEpRvHEvv5mDF"
+POSTHOG_HOST = "https://us.i.posthog.com"
+SUPABASE_URL = "https://gcwsecdavxceezodulvq.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjd3NlY2RhdnhjZWV6b2R1bHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MjIyNTAsImV4cCI6MjA1ODk5ODI1MH0.cjxOi18on1dPRaA94uzHXZd5Y5kHlAipDvIwipoWYnk"
+MODAL_API_URL = "https://phospho-production--admin-api-fastapi-app.modal.run"

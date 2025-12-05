@@ -1,0 +1,184 @@
+---
+title: 'MCP Robotics: Controlling Robots with LLMs using phosphobot MCP'
+description: "Connect a Large Language Model to a robot using the Model Context Protocol (MCP) and phosphobot."
+---
+
+import InstallCode from '/snippets/install-code.mdx';
+
+This guide provides the essential code and instructions to get started with **MCP for robotics**. Using [phosphobot](../installation) and the **Model Context Protocol (MCP)**, you can connect a Large Language Model (LLM) like Claude to a robot, enabling it to access camera feeds and trigger actions through a standardized interface.
+
+<iframe
+  className="w-full aspect-video rounded-xl"
+  src="https://www.youtube.com/embed/vMYgt9AT2Uo"
+  title="A short video demonstrating MCP Robotics with phosphobot"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+></iframe>
+
+- 🔗 **GitHub Repository**: [phospho-mcp-server](https://github.com/phospho-app/phospho-mcp-server)
+- 🔌 **Core Protocol**: [Model Context Protocol](https://github.com/modelcontextprotocol/python-sdk)
+- 🤖 **Key Tools**: [Claude](https://claude.ai/download) and [phosphobot](https://github.com/phospho-app/phosphobot)
+
+## What is the Model Context Protocol (MCP)?
+
+The **Model Context Protocol (MCP)** is an open standard that connects Large Language Models to real-world tools and data sources. 
+
+Think of it **like an USB-C port for AI**, a universal translator between an AI and any application. 
+
+MCP allows an LLM to "plug into" different systems, giving it the power to see, reason, and, most importantly, act. For **MCP robotics**, this means giving an AI the hands and eyes to interact with the physical world.
+
+### What are the key concepts of MCP?
+
+- **Tools** are real Python functions that the model can call to perform actions. 
+    - Example: pickup_object("banana") to move a robot arm.
+- **Resources** are read-only data sources, accessible via URIs. 
+    - Example: file://home/user/notes.txt to expose the content of a local text file.
+- **Host / Client / Server architecture**
+    - Host = the LLM applications that start the connection (e.g. Claude)
+    - Client = the MCP protocol that conects tools to the LLM
+    - Server = your app exposing tools/resources (e.g. the phosphobot MCP server)
+- **Lifespan** lets you run startup/shutdown code (e.g., to launch a robot process), and share context across tools.
+
+
+### Why MCP for Robotics?
+
+Before MCP, connecting an AI to a robot required custom, complex integrations for each specific model and robot. **MCP robotics** changes this by creating a universal standard.
+
+- **Standardized Control**: Any MCP-compatible LLM can control any MCP-enabled robot.
+- **Simplified Integration**: It removes the need for fragmented, one-off solutions, creating a "plug-and-play" ecosystem for AI and robotics. [14]
+- **Real-World Interaction**: It bridges the gap between AI's reasoning capabilities and a robot's physical actions, enabling tasks like object manipulation based on visual input.
+
+With **robots MCP**, developers can build powerful applications where an AI can perceive its environment and execute physical tasks.
+
+## How phosphobot Implements MCP Robotics
+
+The **phosphobot MCP** integration is a practical example of this protocol in action. The basic demo exposes two primary capabilities to the LLM:
+
+- **Camera Stream**: A tool that retrieves the current frame from a webcam, giving the LLM vision.
+- **Replay Tool**: A tool that triggers a pre-recorded robot action, like picking up an object.
+
+The **phosphobot MCP server** manages these tools and the communication with the robot's local API.
+
+## Getting Started with phosphobot MCP
+
+Follow these steps to set up your **MCP robotics** environment.
+
+### Prerequisites
+
+- [Claude for Desktop](https://support.anthropic.com/en/articles/10065433-installing-claude-for-desktop) is installed.
+- Python and `git` are installed on your system.
+- You are comfortable using a command-line interface.
+
+### Step 1: Install and Run phosphobot
+
+**[phosphobot](https://docs.phospho.ai)** is an open-source platform that allows you to control robots, record data, and train robotics AI models.
+
+First, [install phosphobot](../installation) with the command for your OS:
+
+<InstallCode/>
+
+Next, run the phosphobot server, which will listen for commands from the MCP server.
+```bash
+phosphobot run
+```
+
+### Step 2: Install the phosphobot MCP Server
+
+This server exposes the robot's controls to Claude. We recommend installing it with **uv**.
+
+1.  **Install uv**, a fast Python package installer:
+<CodeGroup>
+```bash macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+```powershell Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+</CodeGroup>
+
+2.  **Clone the repository and install the server**:
+```bash
+# Clone the phospho MCP server repository
+git clone https://github.com/phospho-app/phospho-mcp-server.git
+
+# Navigate to the correct directory
+cd phospho-mcp-server/phospho-mcp-server
+
+# Install and run the MCP server
+uv run mcp install server.py
+```
+
+This command starts the `phospho` MCP server and registers its tools with Claude. When you open the Claude desktop app, you will see the server and its tools available for use.
+
+## How It Works: Technical Overview
+
+The **phosphobot MCP server** communicates with the local phosphobot instance via its REST API (defaulting to `http://localhost:80`).
+
+- `GET /frames`: Fetches the latest camera image.
+- `POST /recording/play`: Executes a pre-recorded robot action.
+
+The `PhosphoClient` class manages this communication. If you run phosphobot on a port other than 80, you must update the base URL in the `tools/phosphobot.py` file.
+
+## Testing Your MCP Robotics Setup
+
+You can test the server with the MCP inspector by running:
+```bash
+uv run mcp dev server.py
+```
+
+### Example 1: Using the Robot's Camera
+
+Ask Claude a question that requires vision:
+> “What do you see on my desk?”
+
+Claude will use the `get_camera_frame` tool to answer.
+
+### Example 2: Controlling the Robot's Actions
+
+Give Claude a command:
+> “Pick up the banana”
+
+Claude will use the `pickup_object` tool to perform the action.
+
+
+## Available Tools
+
+### `pickup_object`
+Triggers a pre-recorded robotic action.
+
+```python
+@mcp.tool()
+def pickup_object(name: Literal["banana", "black circle", "green cross"]) -> str:
+    """Launches a replay episode to simulate picking up a named object."""
+    ...
+```
+
+### `get_camera_frame`
+Captures a JPEG image from the phosphobot camera.
+
+```python
+@mcp.tool()
+def get_camera_frame() -> Image:
+    """Captures a JPEG image from phosphobot's camera via the /frames endpoint."""
+    ...
+```
+
+## FAQ
+
+**Q: What is `phosphobot`?**
+A: `phosphobot` is an open-source platform for **robotics** that helps you control robots, collect data, and train AI models for robotic tasks.
+
+**Q: What is `phosphobot mcp`?**
+A: `phosphobot mcp` refers to the integration of the phosphobot platform with the Model Context Protocol. It allows an LLM like Claude to control a robot managed by phosphobot by using standardized tools for actions and camera feeds.
+
+**Q: Can I use this with a physical robot?**
+A: Yes. `phosphobot` is designed to control physical robots, allowing you to bridge the gap between AI and hardware. 
+
+**Q: Can it only use pre-recorded actions?**
+A: No, while the demo uses pre-recorded actions for simplicity, you can extend the `phosphobot MCP server` to include real-time control commands or trigger any AI model trained with phosphobot (eg: ACT, gr00t).
+
+## Additional Resources
+
+- [Model Context Protocol (MCP) Official GitHub](https://github.com/modelcontextprotocol/python-sdk)
+- [phosphobot Official Documentation](https://docs.phospho.ai/installation)
+

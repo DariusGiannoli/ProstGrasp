@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@img/sharp-darwin-arm64": "^0.33.1",
+    "mintlify": "^4.0.331",
+    "sharp": "^0.33.3"
+  }
+}

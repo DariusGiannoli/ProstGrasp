@@ -1,0 +1,121 @@
+---
+title: "VR Control from anywhere in the world"
+description: "How to control your robot arm from anywhere in the world using ngrok and a Meta Quest 2, Pro, 3 or 3s"
+---
+
+
+import InstallCode from '/snippets/install-code.mdx';
+import GetMQApp from '/snippets/get-mq-app.mdx';
+
+Control your robot arm from anywhere in the world using ngrok and a Meta Quest 2, Pro, 3 or 3s. This lets you collect datasets with manipulators in different locations. 
+
+## Prerequisites
+
+1. You need a robot arm such as the SO-100, the SO-101, or [other compatible hardware](https://github.com/phospho-app/phosphobot). Get the [phosphot starter pack here](https://robots.phospho.ai).
+2. Install [the phosphobot software](/installation) on your computer.
+
+<InstallCode/>
+
+3. Connect robots to your computer. Start the phosphobot server.
+
+  ```bash
+  phosphobot run
+  ```
+
+4. Complete the [quickstart](/so-100/quickstart) and check that you can [control your robot](/basic-usage/teleop).
+5. The **[phosphobot teleoperation app](/examples/teleop)** is installed on your **Meta Quest 2, Pro, 3 or 3s**. >
+
+<GetMQApp/>
+
+6. An **ngrok account**. [Sign up here](https://ngrok.com/) (*or use an alternative like Cloudflare Tunnel*).
+7. The **ngrok CLI** installed on your device. [Download it here](https://ngrok.com/download)
+
+## 1. Authenticate ngrok
+
+To use ngrok, you need to authenticate your account. Open a terminal and run the following command: 
+
+   ```bash
+   ngrok authtoken YOUR_AUTH_TOKEN
+   ```
+
+   Replace `YOUR_AUTH_TOKEN` with the token provided in your **ngrok dashboard**.
+
+
+## 2. Create an ngrok Tunnel for your control module
+
+1. Ensure your phosphobot server is running and connected to the internet. If you're using the control module, turn it on.
+
+2. SSH into your phosphobot. By default, the password is `password123`
+
+```bash
+ssh phosphobot@phosphobot.local
+```
+
+3. Run the following command to create a tunnel:
+
+   ```bash
+   ngrok http 80
+   ```
+
+   *This command tells ngrok to forward traffic from the internet to your local server running on port 80.*
+
+4. Once the tunnel is active, ngrok will display a forwarding URL in the terminal, such as:
+
+   ```
+   Forwarding  https://abc123.ngrok.io -> http://localhost:80
+   ```
+
+   This URL is publicly accessible from anywhere in the world and will remain active while the ngrok tunnel is running. Turn off the server to stop the tunnel.
+
+## 3. Access Your Teleoperation App Remotely
+
+1. Copy the ngrok `https://` URL displayed in your terminal (e.g., `https://abc123.ngrok.io`).
+2. Share this URL with users who need remote access to your teleoperation app.
+3. Open the URL in a browser to access the **Admin panel**.
+4. In the Meta Quest app, go to `Settings` and enter the **ngrok URL** to connect.
+
+<Note>Ensure your local server remains running while the ngrok tunnel is active. Closing the server will break the connection.</Note>
+
+
+## 4. Secure Your Tunnel
+
+<Warning>By default, ngrok tunnels are public, meaning anyone with the URL can control your robot and access datasets. </Warning>
+
+**To secure your tunnel**:
+1. **Add basic authentication**
+Run the following command to require a username and password to access the tunnel:
+
+   ```bash
+   ngrok http 80 --auth "username:password"
+   ```
+
+   Replace `username` and `password` with your desired credentials.
+
+2. Alternatively, you can **restrict access to specific IP addresses**.
+   - Go to the **ngrok dashboard** 
+   - Use the **IP restrictions feature** in the dashboard.
+
+
+## 5. Monitor Traffic (Optional)
+
+Ngrok provides a web interface for inspecting traffic and requests. To access it:
+
+1. Open your browser and go to `http://localhost:4040`.
+2. Here, you can view **detailed logs** of incoming requests and responses.
+
+
+## What's Next?
+
+Now that your teleoperation app is accessible remotely, you can:
+
+- Share the ngrok URL with collaborators for real-time teleoperation.
+- Record datasets remotely and upload them to your Hugging Face account.
+- Train AI models using the data collected from remote sessions.
+
+<Card
+  title="Train Your First AI Model"
+  icon="robot"
+  iconType="regular"
+  href="/learn/ai-models">
+    Learn how to use your recorded datasets to train your first AI model.
+</Card>

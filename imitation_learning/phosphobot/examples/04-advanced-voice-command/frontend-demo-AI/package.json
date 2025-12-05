@@ -1,0 +1,28 @@
+{
+  "name": "frontend-demo-ai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "demo-Gr00t": "PYTHONPATH=.. python ../backend/ws_server_Gr00t.py",
+    "demo-ACT": "PYTHONPATH=.. python ../backend/ws_server_ACT.py",
+    "demo-replay": "PYTHONPATH=.. python ../backend/ws_server_replay.py"
+
+  },
+  "dependencies": {
+    "next": "15.4.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.1.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

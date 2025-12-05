@@ -1,0 +1,136 @@
+---
+title: "Train a robotics AI model"
+description: "How to train a robotics AI model with a dataset?"
+---
+
+To train an AI model for your robot, you need a robotics dataset. For that, you need to have first [recorded a dataset](/basic-usage/dataset-recording).
+
+<Note>Don't have a dataset? Use one of ours: `phospho-ai/so100-tictactoe`</Note>
+
+<iframe
+  className="w-full aspect-video"
+  src="https://www.youtube.com/embed/kwyqUvdHJFk?si=mq6d4yAimxHOEu9K"
+  title="YouTube video player"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerPolicy="strict-origin-when-cross-origin"
+  allowFullScreen
+></iframe>
+
+## Train GR00T-N1-2B in one click from the phosphobot dashboard
+
+You can fine-tune [Nvidia GR00T-N1-2B](https://huggingface.co/nvidia/GR00T-N1-2B) on your dataset right from the phosphobot dashboard. This is the easiest way to train a AI robotics model.
+
+1. Launch the phosphobot server and go to the phosphobot dashboard in your browser: [http://localhost](http://localhost)
+
+```bash
+phosphobot run
+```
+
+2. Create a phospho account or log in by clicking on the **Sign in** button in the top right corner.
+3. _(If not already done)_ Add your Hugging Face token in the **Admin Settings** tab with **Write authorization**. This will sync your datasets to Hugging Face. Then, record a dataset using teleoperation. [Read the full guide here](/basic-usage/dataset-recording#1-set-up-your-hugging-face-token).
+
+<Info>
+  Garbage in, garbage out. Our tests show that training works with about 30
+  episodes. It's better for the task to be specific. Have good lighting and
+  similar setup.
+</Info>
+
+4. In the **AI Training and Control** section, enter the the name of your dataset on Hugging Face (example: `PLB/simple-lego-pickup-mono-2`).
+
+![phosphobot training cloud](/assets/phosphobot-aitraining.png)
+
+5. Hit the **Train AI Model** button. Your model starts training. Training can take up to 3 hours. Follow the training using the button **View trained models**.
+
+Your trained model is uploaded to HuggingFace [on the phospho-app account](https://huggingface.co/phospho-app). Its name is something like `phospho-app/YOUR_DATASET_NAME-A_RANDOM_ID`.
+
+Next up, you can start controlling your robot with the trained model.
+
+<Accordion
+  title="Advanced training options"
+>
+
+You can add you Weights & Biases token to track your training metrics. Go to the **Admin Settings** tab and add your WandB token (get your token [here](https://wandb.ai/authorize)).
+
+You can also tweak the training parameters. To do so, you must have your phosphobot server running and being logged in in your dashboard.
+Then, use the [/training/start-training](/ai-training/start-training) endpoint to pass more training parameters.
+
+</Accordion>
+
+<CardsGroup>
+<Card
+  title="Control your robot with a trained AI model"
+  icon="brain-circuit"
+  iconType="regular"
+  href="/basic-usage/inference"
+>
+  Let a trained AI model control your robot
+</Card>
+<Card
+  title="Discord"
+  icon="discord"
+  iconType="regular"
+  href="https://discord.gg/cbkggY6NSK"
+>
+  Join the Discord for support and updates (we ship almost daily)
+</Card>
+
+</CardsGroup>
+
+## How to train the ACT (Action Chunking Transformer) model with LeRobot?
+
+The ACT model is a transformer-based model that learns to chunk actions in a sequence. It is trained on a dataset of action sequences and their corresponding chunked actions.
+
+LeRobot is a research-oriented library by Hugging Face that provides a simple interface to train AI models. It is still a work in progress, but it is already very powerful.
+
+Follow [our guide](/learn/ai-models#train-an-act-model-locally-with-lerobot) to train the ACT model on your dataset.
+
+<Card
+  title="Train your ACT model with LeRobot"
+  icon="cloud-arrow-up"
+  href="/learn/ai-models#train-an-act-model-locally-with-lerobot"
+>
+  Train your ACT model with LeRobot
+</Card>
+
+
+## How to train Pi0.5 (Pi-Zero point five) model with the SO-100 robot arm?
+
+[Pi0.5](https://www.physicalintelligence.company/blog/pi05) is a powerful VLA (Vision Language Action model) by Physical Intelligence. They released an open weight model that can be trained on your own datasets.
+
+This VLA promises **open world generalization** and requires lots of data to properly train, think datasets of several hours.
+
+You can still **use phosphobot to fine-tune the Pi0.5 model on your own dataset**.
+
+We will use the phosphobot cloud for this.
+
+Just head over to the **AI training** tab on phosphobot. It should look a little something like this.
+
+![AI training tab on phosphobot](/assets/training-pi0.5.png)
+
+In the top left, enter your **dataset name**, it should be on Hugging Face. For example: `LegrandFrederic/Marker_pickup_piper`.
+
+Then, select the **Pi0.5 model** from the dropdown menu in the upper right.
+
+Change the training parameters such as the image keys to match your dataset. If your dataset only contains one camera, you should set the image keys to `["image.name.in.the.dataset"]`, most likely `["observation.images.main"]` if you recorded it with phosphobot.
+
+<Note>
+Pro tips: 
+- Set your wandb token in the admin panel to track your training metrics.
+- Use a dataset with at least 15 minutes of data.
+- Make sure to set a prompt when recording your dataset.
+</Note>
+
+Finally, hit the **Train AI Model** button. Your model starts training. Training can take several hours depending on your dataset size. Follow the training using the button **View trained models**.
+
+# Next steps
+
+Test the model you just trained on your robot. See the [Use AI models](/basic-usage/inference) page for more information.
+
+<Card
+  title="Use a robotics AI model"
+  icon="brain-circuit"
+  iconType="regular"
+  href="/basic-usage/inference"
+>
+  Let a trained AI model control your robot
+</Card>

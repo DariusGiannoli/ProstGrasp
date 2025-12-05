@@ -1,0 +1,223 @@
+---
+title: "Simple controls"
+description: "How to control the robot arm with API calls."
+---
+
+[phosphobot](../installation.mdx) provides a simple API to control the robot arm. You can use it to move the robot arm, open or close the gripper, and more.
+
+
+
+All code examples can be found in our open source repo [here](https://github.com/phospho-app/phosphobot).
+
+
+## Square movement
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/Rg7gGKiOXjc?si=V62aKKr3OkQDU3_f" 
+    title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+
+<AccordionGroup>
+<Accordion title="Show code - python implementation">
+
+This implementation uses the /move/relative endpoint to move the robot in a square.
+We simply indicate where we want to move the robot relative to its current position.
+
+```python square.py
+import time
+import requests
+
+# Configurations
+PI_IP: str = "127.0.0.1"
+PI_PORT: int = 80
+NUMBER_OF_SQUARES: int = 100
+
+
+# Function to call the API
+def call_to_api(endpoint: str, data: dict = {}):
+    response = requests.post(f"http://{PI_IP}:{PI_PORT}/move/{endpoint}", json=data)
+    return response.json()
+
+
+# Example code to move the robot in a square of 4 cm x 4 cm
+# 1 - Initialize the robot
+call_to_api("init")
+print("Initializing robot")
+time.sleep(2)
+
+# We move it to the top left corner of the square
+call_to_api(
+    "relative", {"x": 0, "y": -3, "z": 0.03, "rx": 0, "ry": 0, "rz": 0, "open": 0}
+)
+print("Moving to top left corner")
+time.sleep(0.2)
+
+# With the move relative endpoint, we can move relative to its current position
+# 2 - We make the robot follow a 3 cm x 3 cm square
+for _ in range(NUMBER_OF_SQUARES):
+    # Move to the top right corner
+    call_to_api(
+        "relative", {"x": 0, "y": 3, "z": 0, "rx": 0, "ry": 0, "rz": 0, "open": 0}
+    )
+    print("Moving to top right corner")
+    time.sleep(0.2)
+
+    # Move to the bottom right corner
+    call_to_api(
+        "relative", {"x": 0, "y": 0, "z": -3, "rx": 0, "ry": 0, "rz": 0, "open": 0}
+    )
+    print("Moving to bottom right corner")
+    time.sleep(0.2)
+
+    # Move to the bottom left corner
+    call_to_api(
+        "relative", {"x": 0, "y": -3, "z": 0, "rx": 0, "ry": 0, "rz": 0, "open": 0}
+    )
+    print("Moving to bottom left corner")
+    time.sleep(0.2)
+
+    # Move to the top left corner
+    call_to_api(
+        "relative", {"x": 0, "y": 0, "z": 3, "rx": 0, "ry": 0, "rz": 0, "open": 0}
+    )
+    print("Moving to top left corner")
+    time.sleep(0.2)
+```
+</Accordion>
+</AccordionGroup>
+
+## Circle movement
+
+### Slow
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/eR4nQTewVYk?si=RfBilA0-vYPyKlc4" 
+    title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+
+<AccordionGroup>
+<Accordion title="Show code - python implementation">
+
+Since it's harder to control the robot's position using relative movements to create a circle, we use the absolute movement instead.
+We calculate the position of the robot in the circle using the sin and cos functions to create a circular motion.
+
+```python circle_slow.py
+import math
+import time
+import requests
+
+# Configurations
+PI_IP: str = "127.0.0.1"
+PI_PORT: int = 80
+NUMBER_OF_STEPS: int = 10
+NUMBER_OF_CIRCLES: int = 15
+
+
+# Function to call the API
+def call_to_api(endpoint: str, data: dict = {}):
+    response = requests.post(f"http://{PI_IP}:{PI_PORT}/move/{endpoint}", json=data)
+    return response.json()
+
+
+# Example code to move the robot in a circle
+# 1 - Initialize the robot
+call_to_api("init")
+print("Initializing robot")
+time.sleep(2)
+
+# With the move absolute endpoint, we can move the robot in an absolute position
+# 2 - We move the robot in a circle with a diameter of 4 cm
+for _ in range(NUMBER_OF_CIRCLES):
+    for step in range(NUMBER_OF_STEPS):
+        position_y: float = 4 * math.sin(2 * math.pi * step / NUMBER_OF_STEPS) 
+        position_z: float = 4 * math.cos(2 * math.pi * step / NUMBER_OF_STEPS) 
+        call_to_api(
+            "absolute",
+            {
+                "x": 0,
+                "y": position_y,
+                "z": position_z,
+                "rx": 0,
+                "ry": 0,
+                "rz": 0,
+                "open": 0,
+            },
+        )
+        print(f"Step {step} - x: 0, y: {position_y}, z: {position_z}")
+        time.sleep(0.03)
+```
+</Accordion>
+</AccordionGroup>
+
+### Fast
+
+<iframe 
+    className="w-full aspect-video"
+    src="https://www.youtube.com/embed/WfYU0T2U-1c?si=1azCcJLmUeun3GKd" 
+    title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerPolicy="strict-origin-when-cross-origin" 
+    allowFullScreen>
+</iframe>
+
+
+<AccordionGroup>
+<Accordion title="Show code - python implementation">
+
+To quicken the robots movements, we lower the number of steps in the circle.
+We also increase the sleep time between each step to avoid the robot moving too fast.
+
+```python circle_fast.py
+import math
+import time
+import requests
+
+# Configurations
+PI_IP: str = "127.0.0.1"
+PI_PORT: int = 80
+NUMBER_OF_STEPS: int = 10
+NUMBER_OF_CIRCLES: int = 15
+
+
+# Function to call the API
+def call_to_api(endpoint: str, data: dict = {}):
+    response = requests.post(f"http://{PI_IP}:{PI_PORT}/move/{endpoint}", json=data)
+    return response.json()
+
+
+# Example code to move the robot in a circle
+# 1 - Initialize the robot
+call_to_api("init")
+print("Initializing robot")
+time.sleep(2)
+
+# With the move absolute endpoint, we can move the robot in an absolute position
+# 2 - We move the robot in a circle with a diameter of 4 cm
+for _ in range(NUMBER_OF_CIRCLES):
+    for step in range(NUMBER_OF_STEPS):
+        position_y: float = 4 * math.sin(2 * math.pi * step / NUMBER_OF_STEPS) 
+        position_z: float = 4 * math.cos(2 * math.pi * step / NUMBER_OF_STEPS) 
+        call_to_api(
+            "absolute",
+            {
+                "x": 0,
+                "y": position_y,
+                "z": position_z,
+                "rx": 0,
+                "ry": 0,
+                "rz": 0,
+                "open": 0,
+            },
+        )
+        print(f"Step {step} - x: 0, y: {position_y}, z: {position_z}")
+        time.sleep(0.2)
+```
+</Accordion>
+</AccordionGroup>

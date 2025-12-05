@@ -1,0 +1,41 @@
+{
+  "name": "so-100",
+  "servos_voltage": 12.0,
+  "servos_offsets": [2180.0, 2077.0, 1040.0, 2089.0, 3093.0, 2059.0],
+  "servos_calibration_position": [1166.0, 3130.0, 65.0, 1052.0, 4088.0, 3216.0],
+  "servos_offsets_signs": [-1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+  "pid_gains": [
+    {
+      "p_gain": 6.0,
+      "i_gain": 0.0,
+      "d_gain": 30.0
+    },
+    {
+      "p_gain": 6.0,
+      "i_gain": 0.1,
+      "d_gain": 15.0
+    },
+    {
+      "p_gain": 6.0,
+      "i_gain": 0.1,
+      "d_gain": 15.0
+    },
+    {
+      "p_gain": 10.0,
+      "i_gain": 0.0,
+      "d_gain": 30.0
+    },
+    {
+      "p_gain": 15.0,
+      "i_gain": 0.0,
+      "d_gain": 30.0
+    },
+    {
+      "p_gain": 10.0,
+      "i_gain": 0.0,
+      "d_gain": 32.0
+    }
+  ],
+  "gripping_threshold": 100,
+  "non_gripping_threshold": 10
+}

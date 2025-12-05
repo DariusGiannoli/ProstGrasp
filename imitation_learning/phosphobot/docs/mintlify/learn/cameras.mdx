@@ -1,0 +1,109 @@
+---
+title: "Cameras"
+description: "What are the different cameras used for robotics ?"
+---
+
+## Cameras in Robotics
+
+Cameras are the eyes of your robot. 
+
+Robots may rely on one or more camera to make decisions. The images, along with additional information such as joint positions, are fed into the model during both training and inference. 
+
+There exist different types of cameras and phosphobot supports most of them.
+
+### How to connect your camera to phosphobot?
+
+phosphobot uses the powerful [OpenCV](https://opencv.org/) library to detect cameras automatically. This open source library supports most of the generic cameras available. phosphobot ships with its own binary of OpenCV, so you don't need to install it separately.  
+
+Placement of cameras matter. In robotics datasets, there are two main types of camera setups:
+
+1. **Context cameras**: These cameras are placed to capture the environment and objects around the robot. These context cameras can be placed on the robot (e.g. on the head, on the body) or in the environment (e.g. on the walls, on the ceiling).
+
+2. **Wrist cameras**: These cameras are placed on the wrists (hands) of the robot. They help with fine-grained manipulation tasks, so that the robot can see if it's holding an object correctly. The [phosphobot starter pack](https://robots.phospho.ai) comes with two wrist cameras, one for each arm.
+
+
+![phospho starter pack wrist camera](/assets/wrist-camera.jpg)
+
+Adding more cameras usually helps to improve AI accuracy. However, it requires more compute at inference time (slower models) and makes the real-life setup more cumbersome. Usually, one context camera and two wrist cameras are a good trade-off.
+
+### What are stereo cameras?
+
+Stereo Cameras are made of two lenses that capture two images of the same scene from slightly different angles.
+![stereo_cam](/assets/stereo_cam.png)
+
+The shift between the two images is used to calculate the depth of the scene. The greater the shift, the closer the object is to the camera.
+
+![Example of a stereo cam depth reconstructions](/assets/stereo_cam_example.jpg)
+
+<Card icon="graduation-cap" title="Depth from Stereo Images" href="https://docs.opencv.org/4.x/dd/d53/tutorial_py_depthmap.html">
+Learn how to compute a depth map from stereo images 
+</Card>
+
+In deep learning models, however, you usually feed directly the two images to the model. The model learns to extract the depth information by itself.
+
+
+### What are depth cameras? (Realsense Cameras)
+
+Depth cameras are a type of camera that can directly return a depth map in addition to the color image. A depth map is a 2D image where each pixel represents the distance between the camera and the object in the scene.
+
+This is an example of a depth image:
+
+![The depth image of an Intel Realsense camera](/assets/depth_image.png)
+
+Intel RealSense cameras are a popular choice for depth cameras. They are more complex than standard cameras. They have multiple sensors (infrared, multiple color sensors, etc.) and a **processor** used to combine them to compute the depth map. 
+
+This means they are pricier than standard cameras and tend to be more difficult to set up.
+
+![Depth camera, model Intel Realsense](/assets/depth_camera.png)
+
+<Card icon="camera" title="Intel Realsense" href="https://www.intelrealsense.com/">
+Learn more about Intel RealSense cameras
+</Card>
+
+phosphobot software supports Intel RealSense cameras using the [Intel Realsense SDK 2.0](https://github.com/IntelRealSense/librealsense/tree/master).
+
+### What are more specific cameras used in robotics?
+
+More specific use cases require more specific cameras. For example:
+
+- **[Thermal cameras](https://en.wikipedia.org/wiki/Thermography)** are used to detect heat. They are useful to detect living beings in the dark or to detect overheating components.
+- **[Night vision cameras](https://en.wikipedia.org/wiki/Night-vision_device)** are used to capture images in the dark. They are useful for surveillance or for night-time navigation.
+- **[Lidar cameras](https://en.wikipedia.org/wiki/Lidar)** are used to capture 3D point clouds of the environment. They are useful for autonomous vehicles or for mapping tasks.
+- **[360 cameras](https://en.wikipedia.org/wiki/Omnidirectional_(360-degree)_camera)** are used to capture a full 360° view of the environment. They are useful for navigation tasks or for telepresence robots.
+- **[Multi-spectral cameras](https://en.wikipedia.org/wiki/Multispectral_imaging)** are used to capture images in multiple wavelengths. They are useful for agriculture or for medical imaging.
+
+The eyes you give to your robot will depend on the tasks you want it to perform.
+
+## Dataset Recording
+
+When [recording a dataset](/basic-usage/dataset-recording) with phosphobot, the images are saved in a mp4 video file using OpenCV. The number of FPS (frames per second), the mp4 codec as well as the video resolution can be configured for recording in the Admin Configuration. 
+
+By default, all available cameras are recorded. But you can disable some of them in the Admin Configuration. This is helpful if you don't want to record your laptop camera or if Apple's iPhone camera records inside your pocket. 
+
+![Recording parameters](/assets/recording_parameters.png)
+
+Anybody can contribute to add new types of cameras to the phospho starter packs by creating a new camera class inheriting from `BaseCamera`.
+
+<Card icon="handshake-angle" title="Contribute" href="https://github.com/phospho-app/phosphobot">
+Join the community and add support for more cameras for the phospho starter packs.
+</Card>
+
+## Troubleshooting Cameras
+
+Every camera vendor has its own SDK and drivers. This can lead to compatibility issues. Here are some tips:
+
+1. On MacOS, you may have the error `failed to set power state` when connecting a Realsense camer. [This is a known issue](https://github.com/phospho-app/phosphobot/issues/171). The solution is to run `phosphobot` with `sudo` to avoid permission issues. 
+
+```
+sudo phosphobot run
+```
+
+2. On Nvidia Jetpack 6 (Nvidia jetson), [pyrealsense2 doesn't work out of the box.](https://github.com/phospho-app/phosphobot/issues/206). You need to recompile the pyrealsense2 library from source.  
+
+3. Use **virtual cameras** to avoid compatibility issues. Virtual cameras let you record your computer screen or a specific window. This is helpful as a workaround when your camera is not detected by phosphobot. 
+
+<Card icon="camera-movie" title="Virtual cameras in OBS" href="https://obsproject.com/kb/virtual-camera-guide">
+Check OBS Studio guide to create virtual cameras
+</Card>
+
+4. Ask for help on the [phospho Discord](https://docs.phospho.ai/welcome), along with your camera model, your operating system (MacOS, Linux, Windows...) and what you have tried so far. We'll get this working together!
